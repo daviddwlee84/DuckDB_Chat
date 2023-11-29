@@ -32,11 +32,12 @@ streamlit run app.py
 - [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
 - [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
 - [ ] Maybe user can ignore "FROM" clause, which by default indicate latest generated table
-- [ ] Option to print statistics (e.g. running time, rows, columns, ...)
+- [X] Option to print statistics (e.g. running time, rows, columns, ...)
 - [X] ~~Add clear page button (clear the chat history but keep the file pointer)~~ => Delete file or upload new one to clear history
 - [ ] Add SQL hint and external resources on page
 - [X] Add option of auto `SELECT * FROM table` when the file loaded => Add session initial options
   - [X] Also print some memory information
+- [X] Deploy this repository to Streamlit
 
 ## Resources
 

@@ -1,5 +1,6 @@
 import streamlit as st
 import duckdb
+import time
 
 st.set_page_config(page_title="DuckDB Chat Demo")
 
@@ -7,6 +8,9 @@ st.title("DuckDB Chat")
 
 with st.expander("Settings"):
     default_table_name = st.text_input("Default Table Name", "tbl")
+    show_information = st.checkbox(
+        "Show additional information (e.g. time usage, total rows, columns)", True
+    )
     st.text("Chat initial settings (take effect when uploading new file):")
     auto_initial_table = st.checkbox("Print table when file is uploaded", False)
     auto_initial_table_status = st.checkbox(
@@ -112,6 +116,11 @@ for message in st.session_state.messages:
                 st.code(message["content"], language="sql")
             elif message["role"] == "assistant":
                 st.dataframe(message["content"])
+                if show_information and message.get("time_usage"):
+                    row, col = message["content"].shape
+                    st.caption(
+                        f"Time usage: {message['time_usage']:.2f} seconds; Total rows {row}; Total columns {col}."
+                    )
     else:
         with st.chat_message(name="assistant"):
             if message["role"] == "initial":
@@ -120,7 +129,9 @@ for message in st.session_state.messages:
 if prompt := st.chat_input(
     "Please input SQL query.", disabled=st.session_state.data is None
 ):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt, "time_usage": None}
+    )
     with st.chat_message("user"):
         st.code(prompt, language="sql")
 
@@ -142,11 +153,20 @@ if prompt := st.chat_input(
                 prompt += f" LIMIT {row_limit};"
 
         with st.spinner():
+            start = time.perf_counter()
             result_df = duckdb.sql(prompt).df()
             # if row_limit > 0:
             #     result_df = duckdb.sql(prompt).df().head(row_limit)
             # else:
             #     result_df = duckdb.sql(prompt).df()
+            time_usage = time.perf_counter() - start
 
         message_placeholder.dataframe(result_df)
-    st.session_state.messages.append({"role": "assistant", "content": result_df})
+        if show_information:
+            row, col = result_df.shape
+            st.caption(
+                f"Time usage: {time_usage:.2f} seconds; Total rows {row}; Total columns {col}."
+            )
+    st.session_state.messages.append(
+        {"role": "assistant", "content": result_df, "time_usage": time_usage}
+    )
