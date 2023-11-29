@@ -1,0 +1,14 @@
+streamlit
+
+# Run these pip install commands from the command line if Jupyter Notebook is not yet installed.
+# Otherwise, see Google Collab link above for an in-notebook example
+duckdb
+
+# Install Jupyter Notebook (Note: you can also install JupyterLab: pip install jupyterlab) 
+notebook
+
+# Install supporting libraries
+jupysql
+pandas
+matplotlib
+duckdb-engine
