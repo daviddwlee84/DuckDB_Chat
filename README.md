@@ -34,10 +34,15 @@ streamlit run app.py
 - [ ] Maybe user can ignore "FROM" clause, which by default indicate latest generated table
 - [X] Option to print statistics (e.g. running time, rows, columns, ...)
 - [X] ~~Add clear page button (clear the chat history but keep the file pointer)~~ => Delete file or upload new one to clear history
-- [ ] Add SQL hint and external resources on page
+- [X] Add SQL hint and external resources on page
+  - [ ] Add cheat sheet image
 - [X] Add option of auto `SELECT * FROM table` when the file loaded => Add session initial options
   - [X] Also print some memory information
 - [X] Deploy this repository to Streamlit
+- [ ] Support DuckDB extensions
+  - [ ] [httpfs Extension - DuckDB](https://duckdb.org/docs/extensions/httpfs)
+- [ ] Support web file path / API e.g. https://api.github.com/search/repositories?q=jupyter&sort=stars&order=desc
+  - [Analyzing Github Data with JupySQL + DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/tutorials/duckdb-github.html)
 
 ## Resources
 
@@ -45,7 +50,7 @@ streamlit run app.py
 
 - [Python API - DuckDB](https://duckdb.org/docs/api/python/overview)
 - [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
-
+- [DuckDB Documentation](https://duckdb.org/duckdb-docs.pdf)
 
 ### Streamlit
 

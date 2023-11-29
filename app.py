@@ -21,6 +21,19 @@ with st.expander("Settings"):
     )
     row_limit = st.number_input("Maximum rows to show (`<= 0` means no limit)", value=0)
 
+with st.expander("Hints and Syntax"):
+    st.markdown(
+        """
+Use `"column_name"` for column name and `'string'` for string literal.
+
+You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Time by `timestamp_column::TIME`
+
+- DuckDB SQL Syntax: [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
+- DuckDB Data Types: [Data Types - DuckDB](https://duckdb.org/docs/sql/data_types/overview)
+- DuckDB Functions: [Functions - DuckDB](https://duckdb.org/docs/sql/functions/overview)
+"""
+    )
+
 # TODO: customized table name
 st.markdown(
     f"Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`"
