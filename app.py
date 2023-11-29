@@ -2,6 +2,10 @@ import streamlit as st
 import duckdb
 import time
 
+# from functools import partial
+# import pandas as pd
+# from streamlit.delta_generator import DeltaGenerator
+
 st.set_page_config(page_title="DuckDB Chat Demo")
 
 st.title("DuckDB Chat")
@@ -11,6 +15,7 @@ with st.expander("Settings"):
     show_information = st.checkbox(
         "Show additional information (e.g. time usage, total rows, columns)", True
     )
+    # show_plot_button = st.checkbox("Show plot button", True)
     st.text("Chat initial settings (take effect when uploading new file):")
     auto_initial_table = st.checkbox("Print table when file is uploaded", False)
     auto_initial_table_status = st.checkbox(
@@ -122,7 +127,7 @@ tbl = st.session_state.data
 # exec(f"{default_table_name} = st.session_state.data")
 
 # Rendering history message
-for message in st.session_state.messages:
+for i, message in enumerate(st.session_state.messages):
     if message["role"] in {"user", "assistant"}:
         with st.chat_message(message["role"]):
             if message["role"] == "user":
@@ -180,6 +185,41 @@ if prompt := st.chat_input(
             st.caption(
                 f"Time usage: {time_usage:.2f} seconds; Total rows {row}; Total columns {col}."
             )
+
+    # Update history
     st.session_state.messages.append(
         {"role": "assistant", "content": result_df, "time_usage": time_usage}
     )
+
+#     if show_plot_button:
+#         st.session_state.latest_result_df = result_df
+#
+#
+# def plot_dataframe(df: pd.DataFrame, pandas_df_plot_kwargs: dict):
+#     try:
+#         st.session_state.figure = df.plot(**pandas_df_plot_kwargs).figure
+#     except Exception as e:
+#         st.error(e)
+#         st.session_state.figure = None
+#
+#
+# if show_plot_button and "latest_result_df" in st.session_state:
+#     image_placeholder = st.empty()
+#
+#     pandas_df_plot_kwargs = eval(
+#         st.text_area(
+#             "Plot arguments (argument in json format [pandas.DataFrame.plot](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.plot.html))",
+#             value='{"x": None, "y": "your_column", "use_index": True, "kind": "bar", "title": "plot"}',
+#         )
+#     )
+#
+#     click = st.button(
+#         "Plot",
+#         on_click=partial(
+#             plot_dataframe, st.session_state.latest_result_df, pandas_df_plot_kwargs
+#         ),
+#         key=len(st.session_state.messages),
+#     )
+#
+#     if click and "figure" in st.session_state and st.session_state.figure is not None:
+#         image_placeholder.pyplot(st.session_state.figure)

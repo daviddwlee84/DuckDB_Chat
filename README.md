@@ -30,6 +30,7 @@ streamlit run app.py
 - [ ] Support no header CSV (or see what will happened)
 - [ ] Support DuckDB, SQLite, ... ([Connecting to a database — Python documentation](https://jupysql.ploomber.io/en/latest/connecting.html))
 - [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
+  - [ ] Plot button (for each DataFrame or at the end) => this will make code very mess
 - [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
 - [ ] Maybe user can ignore "FROM" clause, which by default indicate latest generated table
 - [X] Option to print statistics (e.g. running time, rows, columns, ...)
