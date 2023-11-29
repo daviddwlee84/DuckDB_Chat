@@ -2,6 +2,8 @@
 
 Access file as a database with interactive SQL query experience.
 
+- [Online Demo](https://duckdb-chat-demo.streamlit.app/)
+
 ## Getting Started
 
 ![Demo](demo/DuckDB-Chat-Demo.png)
@@ -41,6 +43,8 @@ streamlit run app.py
 ### DuckDB
 
 - [Python API - DuckDB](https://duckdb.org/docs/api/python/overview)
+- [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
+
 
 ### Streamlit
 

@@ -1,5 +1,7 @@
 streamlit
 
+fsspec
+
 # Run these pip install commands from the command line if Jupyter Notebook is not yet installed.
 # Otherwise, see Google Collab link above for an in-notebook example
 duckdb
