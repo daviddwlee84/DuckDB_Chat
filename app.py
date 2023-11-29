@@ -7,6 +7,11 @@ st.title("DuckDB Chat")
 
 with st.expander("Settings"):
     default_table_name = st.text_input("Default Table Name", "tbl")
+    st.text("Chat initial settings (take effect when uploading new file):")
+    auto_initial_table = st.checkbox("Print table when file is uploaded", True)
+    auto_initial_table_status = st.checkbox(
+        "Print table statistics when file is uploaded", True
+    )
 
 # TODO: customized table name
 st.markdown(
@@ -28,18 +33,46 @@ uploaded_file = st.file_uploader(
     accept_multiple_files=False,
 )
 
-if st.session_state.uploaded_file != uploaded_file and uploaded_file is not None:
+if uploaded_file is None:
     st.session_state.messages = []
-    st.session_state.uploaded_file = uploaded_file
+else:
+    if st.session_state.uploaded_file != uploaded_file:
+        st.session_state.messages = []
+        st.session_state.uploaded_file = uploaded_file
 
-    if uploaded_file.name.endswith(".csv"):
-        st.session_state.data = duckdb.read_csv(uploaded_file)
-    elif uploaded_file.name.endswith(".parquet"):
-        st.session_state.data = duckdb.read_parquet(uploaded_file)
-    elif uploaded_file.name.endswith(".json"):
-        st.session_state.data = duckdb.read_json(uploaded_file)
-    else:
-        st.session_state.data = None
+        if uploaded_file.name.endswith(".csv"):
+            st.session_state.data = duckdb.read_csv(uploaded_file)
+        elif uploaded_file.name.endswith(".parquet"):
+            st.session_state.data = duckdb.read_parquet(uploaded_file)
+        elif uploaded_file.name.endswith(".json"):
+            st.session_state.data = duckdb.read_json(uploaded_file)
+        else:
+            st.session_state.data = None
+
+        if auto_initial_table:
+            st.session_state.messages.extend(
+                (
+                    {
+                        "role": "initial",
+                        "content": f"DataFrame of file `{st.session_state.uploaded_file.name}` (as table alias `{default_table_name}`)",
+                    },
+                    {"role": "assistant", "content": st.session_state.data.df()},
+                )
+            )
+
+        if auto_initial_table_status:
+            st.session_state.messages.extend(
+                (
+                    {
+                        "role": "initial",
+                        "content": f"Statistic summary of table `{default_table_name}`",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": st.session_state.data.df().describe(),
+                    },
+                )
+            )
 
 # Create alias for duckdb
 tbl = st.session_state.data
@@ -48,12 +81,18 @@ tbl = st.session_state.data
 # https://stackoverflow.com/questions/5036700/how-can-you-dynamically-create-variables
 # exec(f"{default_table_name} = st.session_state.data")
 
+# Rendering history message
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        if message["role"] == "user":
-            st.code(message["content"], language="sql")
-        elif message["role"] == "assistant":
-            st.dataframe(message["content"])
+    if message["role"] in {"user", "assistant"}:
+        with st.chat_message(message["role"]):
+            if message["role"] == "user":
+                st.code(message["content"], language="sql")
+            elif message["role"] == "assistant":
+                st.dataframe(message["content"])
+    else:
+        with st.chat_message(name="assistant"):
+            if message["role"] == "initial":
+                st.markdown(message["content"])
 
 if prompt := st.chat_input(
     "Please input SQL query.", disabled=st.session_state.data is None
