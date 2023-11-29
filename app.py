@@ -16,6 +16,10 @@ with st.expander("Settings"):
         "Show additional information (e.g. time usage, total rows, columns)", True
     )
     # show_plot_button = st.checkbox("Show plot button", True)
+    # use_implicit_from = st.checkbox(
+    #     "Able to write statement without FROM latest dataframe (otherwise from file)",
+    #     True,
+    # )
     st.text("Chat initial settings (take effect when uploading new file):")
     auto_initial_table = st.checkbox("Print table when file is uploaded", False)
     auto_initial_table_status = st.checkbox(
@@ -41,7 +45,10 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 
 # TODO: customized table name
 st.markdown(
-    f"Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`"
+    f"""
+    - Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`.
+    - Note that, the `FROM {default_table_name}` can be omitted now. You can `SELECT *` which implies the use of table `{default_table_name}`.
+    """
 )
 
 if "messages" not in st.session_state:
@@ -156,9 +163,18 @@ if prompt := st.chat_input(
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
-        if default_table_name != "tbl":
-            # TODO: make this regular expression
-            prompt = prompt.replace(f"FROM {default_table_name}", "FROM tbl")
+        if "FROM" in prompt:
+            if default_table_name != "tbl":
+                # TODO: make this regular expression
+                # TODO: this should also support lower-case from
+                prompt = prompt.replace(f"FROM {default_table_name}", "FROM tbl")
+        else:
+            #  using the FROM-first syntax
+            prompt = f"FROM tbl " + prompt
+            # if use_implicit_from and st.session_state.get('latest_result'):
+            #     prompt = f'FROM latest_result ' + prompt
+            # else:
+            #     prompt = f"FROM {default_table_name} " + prompt
 
         # TODO: not sure if this part make sense. Ideally, user should be aware of what they are doing.
         # (operation can cancel when it took too much time)
@@ -172,13 +188,10 @@ if prompt := st.chat_input(
 
         with st.spinner():
             start = time.perf_counter()
-            result_df = duckdb.sql(prompt).df()
-            # if row_limit > 0:
-            #     result_df = duckdb.sql(prompt).df().head(row_limit)
-            # else:
-            #     result_df = duckdb.sql(prompt).df()
+            result = duckdb.sql(prompt)
             time_usage = time.perf_counter() - start
 
+        result_df = result.df()
         message_placeholder.dataframe(result_df)
         if show_information:
             row, col = result_df.shape

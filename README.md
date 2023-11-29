@@ -32,7 +32,8 @@ streamlit run app.py
 - [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
   - [ ] Plot button (for each DataFrame or at the end) => this will make code very mess
 - [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
-- [ ] Maybe user can ignore "FROM" clause, which by default indicate latest generated table
+- [X] Maybe user can ignore "FROM" clause, which by default indicate ~~latest generated table~~ original file
+  - [ ] Think of option between latest generated table or the original file
 - [X] Option to print statistics (e.g. running time, rows, columns, ...)
 - [X] ~~Add clear page button (clear the chat history but keep the file pointer)~~ => Delete file or upload new one to clear history
 - [X] Add SQL hint and external resources on page
