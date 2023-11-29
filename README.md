@@ -14,6 +14,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+## Todo
+
+- [ ] Add [demo of DuckDB with Jupyter Notebook](DuckDB_with_JupyterNotebook)
+- [ ] Able to use customized table alias
+- [ ] Support multiple file loading (same extension and schema)
+- [ ] Support no header CSV (or see what will happened)
+- [ ] Support DuckDB, SQLite, ... ([Connecting to a database — Python documentation](https://jupysql.ploomber.io/en/latest/connecting.html))
+- [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
+- [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
+- [ ] Maybe user can ignore "FROM" clause, which by default indicate latest generated table
+
 ## Resources
 
 ### DuckDB
