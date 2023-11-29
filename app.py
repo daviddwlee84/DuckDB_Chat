@@ -4,8 +4,14 @@ import duckdb
 st.set_page_config(page_title="DuckDB Chat Demo")
 
 st.title("DuckDB Chat")
+
+with st.expander("Settings"):
+    default_table_name = st.text_input("Default Table Name", "tbl")
+
 # TODO: customized table name
-st.markdown("Table name alias is `tbl`. Do things like `SELECT * FROM tbl;`")
+st.markdown(
+    f"Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`"
+)
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -37,6 +43,10 @@ if st.session_state.uploaded_file != uploaded_file and uploaded_file is not None
 
 # Create alias for duckdb
 tbl = st.session_state.data
+# duckdb.alias
+# Not working
+# https://stackoverflow.com/questions/5036700/how-can-you-dynamically-create-variables
+# exec(f"{default_table_name} = st.session_state.data")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -54,7 +64,13 @@ if prompt := st.chat_input(
 
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        # result_df = st.session_state.data.sql(prompt).df()
-        result_df = duckdb.sql(prompt).df()
+
+        if default_table_name != "tbl":
+            # TODO: make this regular expression
+            prompt = prompt.replace(f"FROM {default_table_name}", "FROM tbl")
+
+        with st.spinner():
+            result_df = duckdb.sql(prompt).df()
+
         message_placeholder.dataframe(result_df)
     st.session_state.messages.append({"role": "assistant", "content": result_df})
