@@ -20,6 +20,11 @@ streamlit run app.py
 - [X] Able to use customized table alias
   - [ ] Implement with more elegant way
 - [ ] Support multiple file loading (same extension and schema)
+- [X] Add row limit for potential large file
+  - [X] `<= 0` as no limit
+  - [X] Add `df.head()` at initial state
+  - [X] Add LIMIT at the end of SQL query
+  - [ ] Use more elegant way...?
 - [ ] Support no header CSV (or see what will happened)
 - [ ] Support DuckDB, SQLite, ... ([Connecting to a database — Python documentation](https://jupysql.ploomber.io/en/latest/connecting.html))
 - [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
@@ -29,6 +34,7 @@ streamlit run app.py
 - [X] ~~Add clear page button (clear the chat history but keep the file pointer)~~ => Delete file or upload new one to clear history
 - [ ] Add SQL hint and external resources on page
 - [X] Add option of auto `SELECT * FROM table` when the file loaded => Add session initial options
+  - [X] Also print some memory information
 
 ## Resources
 
@@ -40,3 +46,9 @@ streamlit run app.py
 
 - [Build a basic LLM chat app - Streamlit Docs](https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps)
 - [Chat elements - Streamlit Docs](https://docs.streamlit.io/library/api-reference/chat)
+
+Deploy
+
+- [Deploy your app - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app)
+- [App dependencies - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app/app-dependencies)
+- [Configuration - Streamlit Docs](https://docs.streamlit.io/library/advanced-features/configuration)
