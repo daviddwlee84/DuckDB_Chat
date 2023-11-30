@@ -59,7 +59,8 @@ streamlit run app.py
   - [ ] Making agent that can summary table
 - [ ] Can not only do SQL query but can modify table
 - [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
-- [ ] Manage OpenAI keys in global settings
+- [X] Manage OpenAI keys in global settings
+  - [ ] Maybe move duplicate code block into one place
 
 ## Resources
 
@@ -84,6 +85,7 @@ LangChain x Streamlit
 
 - [Streamlit | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/callbacks/streamlit)
 - [Streamlit • Generative AI](https://streamlit.io/generative-ai)
+  - [streamlit/llm-examples: Streamlit LLM app examples for getting started](https://github.com/streamlit/llm-examples/)
 
 ### LangChain
 
