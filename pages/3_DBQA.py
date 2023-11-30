@@ -14,8 +14,8 @@ table_name = st.text_input(
     value="tbl",
 )
 
-if "uploaded_file" not in st.session_state:
-    st.session_state.uploaded_file = None
+if "dbqa_uploaded_file" not in st.session_state:
+    st.session_state.dbqa_uploaded_file = None
     st.session_state.db_engine = create_engine("sqlite:///:memory:")
     # st.session_state.db_engine = create_engine("sqlite:///temp.db")
     st.session_state.data = None
@@ -31,9 +31,9 @@ uploaded_file = st.file_uploader(
 if uploaded_file is None:
     st.session_state.messages = []
 else:
-    if st.session_state.uploaded_file != uploaded_file:
+    if st.session_state.dbqa_uploaded_file != uploaded_file:
         st.session_state.messages = []
-        st.session_state.uploaded_file = uploaded_file
+        st.session_state.dbqa_uploaded_file = uploaded_file
 
         if uploaded_file.name.endswith(".csv"):
             st.session_state.data = pd.read_csv(uploaded_file)
