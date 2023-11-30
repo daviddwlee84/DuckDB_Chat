@@ -25,7 +25,7 @@ streamlit run app.py
 
 ## Todo
 
-- [ ] Add [demo of DuckDB with Jupyter Notebook](DuckDB_with_JupyterNotebook)
+- [X] Add [demo of DuckDB with Jupyter Notebook](DuckDB_with_JupyterNotebook)
 - [X] Able to use customized table alias
   - [ ] Implement with more elegant way
 - [ ] Support multiple file loading (same extension and schema)
@@ -73,6 +73,7 @@ streamlit run app.py
 ### DuckDB
 
 - [Python API - DuckDB](https://duckdb.org/docs/api/python/overview)
+- [Python DB API - DuckDB](https://duckdb.org/docs/api/python/dbapi.html)
 - [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
 - [DuckDB Documentation](https://duckdb.org/duckdb-docs.pdf)
 
