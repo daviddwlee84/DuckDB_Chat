@@ -20,7 +20,9 @@ st.title("SQL Query Playground")
 # uploaded_file_manager = UploadedFileManager()
 
 with st.expander("Settings"):
-    default_table_name = st.text_input("Default Table Name", "tbl")
+    default_table_name = st.text_input(
+        "Default Table Name (do not use SQL keyword as table name)", "tbl"
+    )
     show_information = st.checkbox(
         "Show additional information (e.g. time usage, total rows, columns)", True
     )
@@ -30,7 +32,10 @@ with st.expander("Settings"):
     #     True,
     # )
     st.text("Chat initial settings (take effect when uploading new file):")
-    auto_initial_table = st.checkbox("Print table when file is uploaded", False)
+    auto_initial_table = st.checkbox("Print table preview when file is uploaded", True)
+    auto_initial_table_schema = st.checkbox(
+        "Print table schema when file is uploaded", True
+    )
     auto_initial_table_status = st.checkbox(
         "Print table statistics when file is uploaded", False
     )
@@ -57,6 +62,8 @@ st.markdown(
     f"""
     - Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`.
     - Note that, the `FROM {default_table_name}` can be omitted now. You can `SELECT *` which implies the use of table `{default_table_name}`.
+    - Do not use preserve keyword like "table" for the table name.
+    - Now support DuckDB statement like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
     """
 )
 
@@ -66,6 +73,9 @@ if "messages" not in st.session_state:
 if "uploaded_file" not in st.session_state:
     st.session_state.uploaded_file = None
     st.session_state.data = None
+    st.session_state.duckdb_connect = duckdb.connect()
+
+duckdb_connect = st.session_state.duckdb_connect.cursor()
 
 # TODO: Support multiple file
 # If upload multiple file, they must have same extension and schema.
@@ -83,37 +93,67 @@ else:
         st.session_state.uploaded_file = uploaded_file
 
         if uploaded_file.name.endswith(".csv"):
-            st.session_state.data = duckdb.read_csv(uploaded_file)
+            # st.session_state.data = duckdb.read_csv(uploaded_file)
+            st.session_state.data = duckdb.read_csv(
+                uploaded_file, connection=duckdb_connect
+            )
         elif uploaded_file.name.endswith(".parquet"):
-            # TODO: making a LRU file manager for this
-            # with open(uploaded_file.name, "wb") as destination_file:
-            #     shutil.copyfileobj(uploaded_file, destination_file)
-            # https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
-            # with tempfile.NamedTemporaryFile(suffix=".parquet") as fp:
-            #     fp.write(uploaded_file.getbuffer())
-            # NOTE: duckdb won't read file directly, so we should remove them later
-            # st.session_state.data = duckdb.read_parquet(uploaded_file.name)
-            st.session_state.data = duckdb.from_df(pd.read_parquet(uploaded_file))
-            # shutil.rmtree(uploaded_file.name)
-            # os.remove(uploaded_file.name)
+            # # TODO: making a LRU file manager for this
+            # # with open(uploaded_file.name, "wb") as destination_file:
+            # #     shutil.copyfileobj(uploaded_file, destination_file)
+            # # https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
+            # # with tempfile.NamedTemporaryFile(suffix=".parquet") as fp:
+            # #     fp.write(uploaded_file.getbuffer())
+            # # NOTE: duckdb won't read file directly, so we should remove them later
+            # # st.session_state.data = duckdb.read_parquet(uploaded_file.name)
+            # st.session_state.data = duckdb.from_df(pd.read_parquet(uploaded_file))
+            # # shutil.rmtree(uploaded_file.name)
+            # # os.remove(uploaded_file.name)
+            st.session_state.data = duckdb.from_df(
+                pd.read_parquet(uploaded_file),
+                connection=duckdb_connect,
+            )
         elif uploaded_file.name.endswith(".json"):
             # TODO: haven't tested yet
-            st.session_state.data = duckdb.read_json(uploaded_file)
+            # st.session_state.data = duckdb.read_json(uploaded_file)
+            st.session_state.data = duckdb.read_json(
+                uploaded_file, connection=duckdb_connect
+            )
         else:
-            st.session_state.data = None
+            st.error("Invalid file extension.")
+            st.stop()
+            # st.session_state.data = None
 
         if auto_initial_table:
+            # NOTE: currently force preview top 10 rows
             st.session_state.messages.extend(
                 (
                     {
                         "role": "initial",
-                        "content": f"DataFrame of file `{st.session_state.uploaded_file.name}` (as table alias `{default_table_name}`)",
+                        "content": f"Preview top 10 rows of file `{st.session_state.uploaded_file.name}` (as table alias `{default_table_name}`)",
                     },
                     {
                         "role": "assistant",
-                        "content": st.session_state.data.df()
-                        if row_limit <= 0
-                        else st.session_state.data.df().head(row_limit),
+                        # "content": st.session_state.data.df()
+                        # if row_limit <= 0
+                        # else st.session_state.data.df().head(row_limit),
+                        "content": st.session_state.data.df().head(10),
+                    },
+                )
+            )
+
+        if auto_initial_table_schema:
+            st.session_state.messages.extend(
+                (
+                    {
+                        "role": "initial",
+                        "content": f"Schema of table `{default_table_name}`",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": st.session_state.duckdb_connect.execute(
+                            f"DESCRIBE {default_table_name};"
+                        ).df(),
                     },
                 )
             )
@@ -147,7 +187,10 @@ else:
             )
 
 # Create alias for duckdb
-tbl = st.session_state.data
+# tbl = st.session_state.data
+if st.session_state.data is not None:
+    duckdb_connect.register(default_table_name, st.session_state.data)
+
 # duckdb.alias
 # Not working
 # https://stackoverflow.com/questions/5036700/how-can-you-dynamically-create-variables
@@ -183,18 +226,23 @@ if prompt := st.chat_input(
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
-        if "FROM" in prompt:
-            if default_table_name != "tbl":
-                # TODO: make this regular expression
-                # TODO: this should also support lower-case from
-                prompt = prompt.replace(f"FROM {default_table_name}", "FROM tbl")
-        else:
-            #  using the FROM-first syntax
-            prompt = f"FROM tbl " + prompt
-            # if use_implicit_from and st.session_state.get('latest_result'):
-            #     prompt = f'FROM latest_result ' + prompt
-            # else:
-            #     prompt = f"FROM {default_table_name} " + prompt
+        # if "FROM" in prompt:
+        #     pass
+        #     # if default_table_name != "tbl":
+        #     #     # TODO: make this regular expression
+        #     #     # TODO: this should also support lower-case from
+        #     #     prompt = prompt.replace(f"FROM {default_table_name}", "FROM tbl")
+        # else:
+        #     #  using the FROM-first syntax
+        #     # prompt = f"FROM tbl " + prompt
+        #     prompt = f"FROM {default_table_name} " + prompt
+        #     # if use_implicit_from and st.session_state.get('latest_result'):
+        #     #     prompt = f'FROM latest_result ' + prompt
+        #     # else:
+        #     #     prompt = f"FROM {default_table_name} " + prompt
+
+        if prompt.upper().startswith("SELECT") and "FROM" not in prompt.upper():
+            prompt = f"FROM {default_table_name} " + prompt
 
         # TODO: not sure if this part make sense. Ideally, user should be aware of what they are doing.
         # (operation can cancel when it took too much time)
@@ -208,7 +256,8 @@ if prompt := st.chat_input(
 
         with st.spinner():
             start = time.perf_counter()
-            result = duckdb.sql(prompt)
+            result = duckdb.execute(prompt, connection=duckdb_connect)
+            # result = duckdb.sql(prompt)
             time_usage = time.perf_counter() - start
 
         result_df = result.df()

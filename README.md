@@ -50,6 +50,7 @@ streamlit run app.py
 - [X] Add option of auto `SELECT * FROM table` when the file loaded => Add session initial options
   - [X] Also print some memory information
 - [X] Deploy this repository to Streamlit
+- [X] Support more than SQL command (i.e. DuckDB statement like CREATE TABLE, DESCRIBE, SHOW TABLES, etc.)
 - [ ] Support DuckDB extensions
   - [ ] [httpfs Extension - DuckDB](https://duckdb.org/docs/extensions/httpfs)
 - [ ] Support web file path / API e.g. https://api.github.com/search/repositories?q=jupyter&sort=stars&order=desc
@@ -108,6 +109,7 @@ LangChain x Streamlit
   - Case 2: Text-to-SQL query and execution
   - Case 3: SQL agents
 - [SQL Database | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/toolkits/sql_database)
+  - [langchain.utilities.sql_database.SQLDatabase — 🦜🔗 LangChain 0.0.339rc1](https://api.python.langchain.com/en/latest/utilities/langchain.utilities.sql_database.SQLDatabase.html)
   - [feat: parquet file support for SQL agent · Issue #2002 · langchain-ai/langchain](https://github.com/langchain-ai/langchain/issues/2002) (this guy use parquet with duckdb => convert to SQLite)
 - [CSV | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/toolkits/csv)
 - [sugarforever/LangChain-SQL-Chain](https://github.com/sugarforever/LangChain-SQL-Chain)
