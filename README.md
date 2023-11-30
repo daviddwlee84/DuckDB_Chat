@@ -13,6 +13,13 @@ pip install -r requirements.txt
 ```
 
 ```bash
+# Optional
+cp example.env .env
+# Fill-in your keys
+# ...
+```
+
+```bash
 streamlit run app.py
 ```
 
@@ -45,6 +52,14 @@ streamlit run app.py
   - [ ] [httpfs Extension - DuckDB](https://duckdb.org/docs/extensions/httpfs)
 - [ ] Support web file path / API e.g. https://api.github.com/search/repositories?q=jupyter&sort=stars&order=desc
   - [Analyzing Github Data with JupySQL + DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/tutorials/duckdb-github.html)
+- [ ] Remove the file size limit of the file uploader
+- [ ] Add natural language query support
+  - [ ] Can refer to this [neural-maze/talking_with_hn: The full experience of chatting with your favourite news website.](https://github.com/neural-maze/talking_with_hn)
+  - [ ] Making agent that can generate DuckDB SQL query
+  - [ ] Making agent that can summary table
+- [ ] Can not only do SQL query but can modify table
+- [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
+- [ ] Manage OpenAI keys in global settings
 
 ## Resources
 
@@ -64,3 +79,20 @@ Deploy
 - [Deploy your app - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app)
 - [App dependencies - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app/app-dependencies)
 - [Configuration - Streamlit Docs](https://docs.streamlit.io/library/advanced-features/configuration)
+
+LangChain x Streamlit
+
+- [Streamlit | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/callbacks/streamlit)
+- [Streamlit • Generative AI](https://streamlit.io/generative-ai)
+
+### LangChain
+
+- [**SQL | 🦜️🔗 Langchain**](https://python.langchain.com/docs/use_cases/qa_structured/sql)
+  - Case 1: Text-to-SQL query
+  - Case 2: Text-to-SQL query and execution
+  - Case 3: SQL agents
+- [SQL Database | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/toolkits/sql_database)
+  - [feat: parquet file support for SQL agent · Issue #2002 · langchain-ai/langchain](https://github.com/langchain-ai/langchain/issues/2002) (this guy use parquet with duckdb => convert to SQLite)
+- [CSV | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/toolkits/csv)
+- [sugarforever/LangChain-SQL-Chain](https://github.com/sugarforever/LangChain-SQL-Chain)
+- [**LLMs and SQL**](https://blog.langchain.dev/llms-and-sql/)

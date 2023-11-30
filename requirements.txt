@@ -14,3 +14,5 @@ jupysql
 pandas
 matplotlib
 duckdb-engine
+
+python-dotenv
