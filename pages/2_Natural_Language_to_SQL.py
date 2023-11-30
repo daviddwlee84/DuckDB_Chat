@@ -71,15 +71,15 @@ for msg in st.session_state.messages:
 if prompt := st.chat_input():
     if openai_selection == "OpenAI":
         if not st.session_state.openai_api_key:
-            st.info("Please add your OpenAI API key to continue.")
+            st.warning("🥸 Please add your OpenAI API key to continue.")
             st.stop()
 
         # TODO: Update code to https://github.com/streamlit/llm-examples/blob/main/Chatbot.py
         # APIRemovedInV1: You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API. You can run `openai migrate` to automatically upgrade your codebase to use the 1.0.0 interface. Alternatively, you can pin your installation to the old version, e.g. `pip install openai==0.28` A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
-        openai.api_key = st.session_state.openai_api_key
+        client = openai.OpenAI(api_key=st.session_state.openai_api_key)
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo", messages=st.session_state.messages
         )
         msg = response.choices[0].message
@@ -88,7 +88,7 @@ if prompt := st.chat_input():
 
     elif openai_selection == "Azure OpenAI":
         if not st.session_state.azure_openai_api_key:
-            st.info("Please add your Azure OpenAI API key to continue.")
+            st.warning("🥸 Please add your Azure OpenAI API key to continue.")
             st.stop()
 
         # TODO

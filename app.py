@@ -2,7 +2,8 @@ import streamlit as st
 from dotenv import load_dotenv
 import os
 
-load_dotenv(curr_dir := os.path.dirname(os.path.abspath(__file__)))
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(curr_dir, ".env"))
 
 st.set_page_config(
     page_title="DuckDB Chat Demo",
@@ -42,7 +43,7 @@ with st.sidebar:
     st.divider()
 
     st.text("Azure OpenAI")
-    azure_openai_api_key = st.text_input(
+    st.session_state.azure_openai_api_key = st.text_input(
         "Azure OpenAI API Key",
         # key="azure_openai_api_key_text_input",
         value=st.session_state.get(
@@ -50,7 +51,6 @@ with st.sidebar:
         ),
         type="password",
     )
-    st.session_state.azure_openai_api_key = azure_openai_api_key
     st.session_state.azure_openai_endpoint = st.text_input(
         "Azure OpenAI Endpoint",
         # key="azure_openai_endpoint_text_input",
@@ -79,7 +79,7 @@ with st.sidebar:
 
 st.markdown(
     """
-    - Github Page: [daviddwlee84/DuckDB_Chat: Access file as a database with interactive SQL query experience. Built on Streamlit and DuckDB.](https://github.com/daviddwlee84/DuckDB_Chat)
+    - Github Page: [daviddwlee84/DuckDB_Chat](https://github.com/daviddwlee84/DuckDB_Chat)
     - Personal Website: [David Lee](https://dwlee-personal-website.netlify.app/)
 """
 )

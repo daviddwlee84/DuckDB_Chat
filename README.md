@@ -61,6 +61,7 @@ streamlit run app.py
 - [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
 - [X] Manage OpenAI keys in global settings
   - [ ] Maybe move duplicate code block into one place
+  - [X] Somehow failed to load from `.env` when disabling `"key"` in `st.text_input`
 - [X] Solve DuckDB `read_parquet()` require filename (instead of file object) issue => Currently using `pd.read_parquet` + `duckdb.from_df`
   - [Make Python read_parquet() (and read_json()) support file object as input like read_csv() does · duckdb/duckdb · Discussion #9857](https://github.com/duckdb/duckdb/discussions/9857)
   - [Let file_uploader return path, instead of reading the file in · Issue #904 · streamlit/streamlit](https://github.com/streamlit/streamlit/issues/904)
