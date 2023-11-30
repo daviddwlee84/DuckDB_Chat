@@ -1,5 +1,7 @@
+# UI
 streamlit
 
+# File reading
 fsspec
 
 # Run these pip install commands from the command line if Jupyter Notebook is not yet installed.
@@ -15,6 +17,13 @@ pandas
 matplotlib
 duckdb-engine
 
+# API Key
 python-dotenv
 
+# SQL
+sqlalchemy
+
+# LLM
 openai
+langchain
+langchain-experimental

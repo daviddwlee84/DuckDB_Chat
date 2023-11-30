@@ -81,5 +81,8 @@ st.markdown(
     """
     - Github Page: [daviddwlee84/DuckDB_Chat](https://github.com/daviddwlee84/DuckDB_Chat)
     - Personal Website: [David Lee](https://dwlee-personal-website.netlify.app/)
+
+    NOTE: Currently, LangChain's SQLDatabase cannot integrate with DuckDB well.
+    Currently, we will stick with the workaround => Pandas DataFrame => SQLite => SQLDatabase
 """
 )
