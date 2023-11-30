@@ -1,7 +1,13 @@
 import streamlit as st
 import duckdb
 import time
-import shutil
+import pandas as pd
+
+# import shutil
+# import os
+
+# from streamlit.runtime.uploaded_file_manager import UploadedFileManager
+# import tempfile
 
 # from functools import partial
 # import pandas as pd
@@ -10,6 +16,8 @@ import shutil
 st.set_page_config(page_title="SQL Query Playground")
 
 st.title("SQL Query Playground")
+
+# uploaded_file_manager = UploadedFileManager()
 
 with st.expander("Settings"):
     default_table_name = st.text_input("Default Table Name", "tbl")
@@ -78,10 +86,18 @@ else:
             st.session_state.data = duckdb.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(".parquet"):
             # TODO: making a LRU file manager for this
-            with open(uploaded_file.name, "wb") as destination_file:
-                shutil.copyfileobj(uploaded_file, destination_file)
-            st.session_state.data = duckdb.read_parquet(uploaded_file.name)
+            # with open(uploaded_file.name, "wb") as destination_file:
+            #     shutil.copyfileobj(uploaded_file, destination_file)
+            # https://docs.python.org/3/library/tempfile.html#tempfile.NamedTemporaryFile
+            # with tempfile.NamedTemporaryFile(suffix=".parquet") as fp:
+            #     fp.write(uploaded_file.getbuffer())
+            # NOTE: duckdb won't read file directly, so we should remove them later
+            # st.session_state.data = duckdb.read_parquet(uploaded_file.name)
+            st.session_state.data = duckdb.from_df(pd.read_parquet(uploaded_file))
+            # shutil.rmtree(uploaded_file.name)
+            # os.remove(uploaded_file.name)
         elif uploaded_file.name.endswith(".json"):
+            # TODO: haven't tested yet
             st.session_state.data = duckdb.read_json(uploaded_file)
         else:
             st.session_state.data = None
