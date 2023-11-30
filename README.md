@@ -38,6 +38,8 @@ streamlit run app.py
 - [ ] Support DuckDB, SQLite, ... ([Connecting to a database — Python documentation](https://jupysql.ploomber.io/en/latest/connecting.html))
 - [ ] Able to plot (maybe indicate by some prefix like Jupyter magics)
   - [ ] Plot button (for each DataFrame or at the end) => this will make code very mess
+  - [tvst/st-execbox](https://github.com/tvst/st-execbox)
+  - [Running Jupyter cells inside streamlit? - 🎈 Using Streamlit - Streamlit](https://discuss.streamlit.io/t/running-jupyter-cells-inside-streamlit/585/3)
 - [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
 - [X] Maybe user can ignore "FROM" clause, which by default indicate ~~latest generated table~~ original file
   - [ ] Think of option between latest generated table or the original file
@@ -76,6 +78,11 @@ streamlit run app.py
 - [Python DB API - DuckDB](https://duckdb.org/docs/api/python/dbapi.html)
 - [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
 - [DuckDB Documentation](https://duckdb.org/duckdb-docs.pdf)
+
+LangChain x DuckDB
+
+- [DuckDB | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/document_loaders/duckdb)
+- [Unlocking ChatGPT's Potential: LangChain Tutorial with DuckDB - YouTube](https://www.youtube.com/watch?v=FoGm7d0paIo)
 
 ### Streamlit
 
