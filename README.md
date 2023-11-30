@@ -60,7 +60,6 @@ streamlit run app.py
   - [ ] Can refer to this [neural-maze/talking_with_hn: The full experience of chatting with your favourite news website.](https://github.com/neural-maze/talking_with_hn)
   - [ ] Making agent that can generate DuckDB SQL query
   - [ ] Making agent that can summary table
-- [ ] Can not only do SQL query but can modify table
 - [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
 - [X] Manage OpenAI keys in global settings
   - [ ] Maybe move duplicate code block into one place
@@ -70,6 +69,11 @@ streamlit run app.py
   - [Let file_uploader return path, instead of reading the file in · Issue #904 · streamlit/streamlit](https://github.com/streamlit/streamlit/issues/904)
   - [Get path from file_uploader() - 🎈 Using Streamlit - Streamlit](https://discuss.streamlit.io/t/get-path-from-file-uploader/3771/16)
     - [tempfile — Generate temporary files and directories — Python 3.12.0 documentation](https://docs.python.org/3/library/tempfile.html)
+- More Demo
+  - [ ] NL to SQL
+  - [ ] DBQA
+    - [X] Able to construct SQLDatabase from uploaded file
+    - [ ] LangChain
 
 ## Resources
 
@@ -84,6 +88,10 @@ LangChain x DuckDB
 
 - [DuckDB | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/document_loaders/duckdb)
 - [Unlocking ChatGPT's Potential: LangChain Tutorial with DuckDB - YouTube](https://www.youtube.com/watch?v=FoGm7d0paIo)
+
+SQLite
+
+- [In-Memory Databases](https://www.sqlite.org/inmemorydb.html)
 
 ### Streamlit
 
