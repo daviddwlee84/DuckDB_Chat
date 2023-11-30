@@ -60,12 +60,12 @@ with st.sidebar:
             type="default",
         )
 
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [
+if "nl_to_sql_messages" not in st.session_state:
+    st.session_state["nl_to_sql_messages"] = [
         {"role": "assistant", "content": "How can I help you?"}
     ]
 
-for msg in st.session_state.messages:
+for msg in st.session_state.nl_to_sql_messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 if prompt := st.chat_input():
@@ -77,13 +77,13 @@ if prompt := st.chat_input():
         # TODO: Update code to https://github.com/streamlit/llm-examples/blob/main/Chatbot.py
         # APIRemovedInV1: You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API. You can run `openai migrate` to automatically upgrade your codebase to use the 1.0.0 interface. Alternatively, you can pin your installation to the old version, e.g. `pip install openai==0.28` A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
         client = openai.OpenAI(api_key=st.session_state.openai_api_key)
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.nl_to_sql_messages.append({"role": "user", "content": prompt})
         st.chat_message("user").write(prompt)
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo", messages=st.session_state.messages
+            model="gpt-3.5-turbo", messages=st.session_state.nl_to_sql_messages
         )
         msg = response.choices[0].message
-        st.session_state.messages.append(msg)
+        st.session_state.nl_to_sql_messages.append(msg)
         st.chat_message("assistant").write(msg.content)
 
     elif openai_selection == "Azure OpenAI":
