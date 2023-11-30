@@ -143,6 +143,7 @@ else:
             )
 
         if auto_initial_table_schema:
+            duckdb_connect.register(default_table_name, st.session_state.data)
             st.session_state.messages.extend(
                 (
                     {
@@ -151,7 +152,7 @@ else:
                     },
                     {
                         "role": "assistant",
-                        "content": st.session_state.duckdb_connect.execute(
+                        "content": duckdb_connect.execute(
                             f"DESCRIBE {default_table_name};"
                         ).df(),
                     },
