@@ -68,27 +68,35 @@ if "nl_to_sql_messages" not in st.session_state:
 for msg in st.session_state.nl_to_sql_messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
+# https://streamlit.io/generative-ai
+# TODO: make response streaming https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps#build-a-simple-chatbot-gui-with-streaming
 if prompt := st.chat_input():
     if openai_selection == "OpenAI":
         if not st.session_state.openai_api_key:
             st.warning("🥸 Please add your OpenAI API key to continue.")
             st.stop()
 
-        # TODO: Update code to https://github.com/streamlit/llm-examples/blob/main/Chatbot.py
-        # APIRemovedInV1: You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API. You can run `openai migrate` to automatically upgrade your codebase to use the 1.0.0 interface. Alternatively, you can pin your installation to the old version, e.g. `pip install openai==0.28` A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
         client = openai.OpenAI(api_key=st.session_state.openai_api_key)
-        st.session_state.nl_to_sql_messages.append({"role": "user", "content": prompt})
-        st.chat_message("user").write(prompt)
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo", messages=st.session_state.nl_to_sql_messages
-        )
-        msg = response.choices[0].message
-        st.session_state.nl_to_sql_messages.append(msg)
-        st.chat_message("assistant").write(msg.content)
 
     elif openai_selection == "Azure OpenAI":
         if not st.session_state.azure_openai_api_key:
             st.warning("🥸 Please add your Azure OpenAI API key to continue.")
             st.stop()
 
-        # TODO
+        client = openai.AzureOpenAI(
+            api_key=st.session_state.azure_openai_api_key,
+            azure_endpoint=st.session_state.azure_openai_endpoint,
+            azure_deployment=st.session_state.azure_openai_deployment_name,
+            api_version=st.session_state.azure_openai_version,
+        )
+
+    st.session_state.nl_to_sql_messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo", messages=st.session_state.nl_to_sql_messages
+    )
+    msg = response.choices[0].message
+    st.session_state.nl_to_sql_messages.append(
+        {"role": "assistant", "content": msg.content}
+    )
+    st.chat_message("assistant").write(msg.content)

@@ -58,6 +58,8 @@ streamlit run app.py
 - [ ] Remove the file size limit of the file uploader
 - [ ] Add natural language query support
   - [ ] Can refer to this [neural-maze/talking_with_hn: The full experience of chatting with your favourite news website.](https://github.com/neural-maze/talking_with_hn)
+  - [X] Inference LLM using API Key
+  - [ ] Streaming user experience
   - [ ] Making agent that can generate DuckDB SQL query
   - [ ] Making agent that can summary table
 - [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
@@ -69,6 +71,7 @@ streamlit run app.py
   - [Let file_uploader return path, instead of reading the file in · Issue #904 · streamlit/streamlit](https://github.com/streamlit/streamlit/issues/904)
   - [Get path from file_uploader() - 🎈 Using Streamlit - Streamlit](https://discuss.streamlit.io/t/get-path-from-file-uploader/3771/16)
     - [tempfile — Generate temporary files and directories — Python 3.12.0 documentation](https://docs.python.org/3/library/tempfile.html)
+- [ ] Support more file type (e.g. Excel, ...)
 - More Demo
   - [ ] NL to SQL
   - [ ] DBQA
@@ -103,6 +106,8 @@ Deploy
 - [Deploy your app - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app)
 - [App dependencies - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app/app-dependencies)
 - [Configuration - Streamlit Docs](https://docs.streamlit.io/library/advanced-features/configuration)
+- [Secrets management - Streamlit Docs](https://docs.streamlit.io/streamlit-community-cloud/deploy-your-app/secrets-management)
+  - Copy `.env` settings to the Streamlit App Settings > Secrets
 
 LangChain x Streamlit
 
