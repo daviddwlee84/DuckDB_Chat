@@ -94,9 +94,14 @@ else:
 
         if uploaded_file.name.endswith(".csv"):
             # st.session_state.data = duckdb.read_csv(uploaded_file)
-            st.session_state.data = duckdb.read_csv(
-                uploaded_file, connection=duckdb_connect
-            )
+            try:
+                st.session_state.data = duckdb.read_csv(
+                    uploaded_file, connection=duckdb_connect
+                )
+            except UnicodeDecodeError:
+                st.session_state.data = duckdb.read_csv(
+                    uploaded_file, connection=duckdb_connect, encoding="gbk"
+                )
         elif uploaded_file.name.endswith(".parquet"):
             # # TODO: making a LRU file manager for this
             # # with open(uploaded_file.name, "wb") as destination_file:

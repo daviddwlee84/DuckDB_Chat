@@ -137,7 +137,12 @@ else:
         st.session_state.temp_images = []
 
         if uploaded_file.name.endswith(".csv"):
-            st.session_state.dbqa_pandasai_data = pd.read_csv(uploaded_file)
+            try:
+                st.session_state.dbqa_pandasai_data = pd.read_csv(uploaded_file)
+            except UnicodeDecodeError:
+                st.session_state.dbqa_pandasai_data = pd.read_csv(
+                    uploaded_file, encoding="gbk"
+                )
         elif uploaded_file.name.endswith(".parquet"):
             st.session_state.dbqa_pandasai_data = pd.read_parquet(uploaded_file)
         elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
