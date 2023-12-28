@@ -1,7 +1,8 @@
-from typing import Literal, Union
+from typing import Literal, Union, Tuple
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
+import glob
 import os
 import pandas as pd
 from pandasai import SmartDataframe, Agent, SmartDatalake
@@ -94,6 +95,7 @@ elif openai_selection == "Azure OpenAI":
 if "dbqa_pandasai_uploaded_file" not in st.session_state:
     st.session_state.dbqa_pandasai_uploaded_file = None
     st.session_state.dbqa_pandasai_data = None
+    st.session_state.temp_images = []
 
 chat_mode: Literal["Single Turn", "Multi Turn"] = st.selectbox(
     "Chat Mode", ["Single Turn", "Multi Turn"]
@@ -103,10 +105,14 @@ rephrase_query: bool = st.checkbox(
     disabled=not chat_mode == "Multi Turn",
 )
 
+
 uploaded_file = st.file_uploader(
     "Data you want to query (support CSV, Parquet, and Json).",
     accept_multiple_files=False,
 )
+
+# https://docs.streamlit.io/library/advanced-features/static-file-serving
+CHARTS_PATH = os.path.join(curr_dir, "../static/images/")
 
 if uploaded_file is None:
     st.session_state.dbqa_pandasai_messages = []
@@ -116,7 +122,7 @@ else:
         "llm": llm,
         "verbose": True,
         "save_charts": True,
-        "save_charts_path": os.path.join(curr_dir, "../exports/charts/"),
+        "save_charts_path": CHARTS_PATH,
         "open_charts": False,
         "enable_cache": True,
     }
@@ -124,6 +130,10 @@ else:
     if st.session_state.dbqa_pandasai_uploaded_file != uploaded_file:
         st.session_state.dbqa_pandasai_messages = []
         st.session_state.dbqa_pandasai_uploaded_file = uploaded_file
+        for img_path in st.session_state.temp_images:
+            os.remove(img_path)
+            st.toast(f'Clean cache image {img_path}')
+        st.session_state.temp_images = []
 
         if uploaded_file.name.endswith(".csv"):
             st.session_state.dbqa_pandasai_data = pd.read_csv(uploaded_file)
@@ -144,6 +154,7 @@ else:
             )
 
     if st.session_state.chat_mode != chat_mode:
+        st.session_state.chat_mode = chat_mode
         st.session_state.dbqa_pandasai_messages = []
         if chat_mode == "Single Turn":
             st.session_state.pandasai_df = SmartDatalake(
@@ -167,13 +178,26 @@ def render_message(
 
     if isinstance(message, SmartDataframe):
         placeholder.dataframe(message.dataframe)
-    elif isinstance(message, str):
-        if os.path.isfile(message):
-            placeholder.image(message)
-        else:
-            placeholder.text(message)
+    elif isinstance(message, str) and message.endswith(".png"):
+        # BUG: streamlit.runtime.media_file_storage.MediaFileStorageError
+        # placeholder.image(message)
+        placeholder.markdown(f"![]({message})")
     else:
         placeholder.write(message)
+
+
+def get_latest_image() -> Tuple[str, str]:
+    """
+    https://stackoverflow.com/questions/76513782/capture-image-response-from-pandasai-as-flask-api-response
+    https://support.google.com/chrome/thread/162698059/not-allowed-to-load-local-resource-how-to-fix-this?hl=en
+    https://docs.streamlit.io/library/advanced-features/static-file-serving
+    """
+    images = glob.glob(os.path.join(CHARTS_PATH, "*.png"))
+    latest_image = max(images, key=os.path.getctime)
+    return (
+        latest_image,
+        os.path.join("app/static/images/", os.path.basename(latest_image)),
+    )
 
 
 for msg in st.session_state.dbqa_pandasai_messages:
@@ -187,13 +211,15 @@ if prompt := st.chat_input(disabled=st.session_state.pandasai_df is None):
     st.session_state.dbqa_pandasai_messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    # TODO: can't properly save image
-    # https://stackoverflow.com/questions/76513782/capture-image-response-from-pandasai-as-flask-api-response
     if isinstance(st.session_state.pandasai_df, Agent):
         if rephrase_query:
+            # BUG: st.session_state.temp_images
             response = st.session_state.pandasai_df.rephrase_query(prompt)
         else:
             response = st.session_state.pandasai_df.chat(prompt)
+        if response is None:
+            real_path, response = get_latest_image()
+            st.session_state.temp_images.append(real_path)
         explanation = st.session_state.pandasai_df.explain()
         st.session_state.dbqa_pandasai_messages.append(
             {"role": "assistant", "content": response, "explanation": explanation}
@@ -202,6 +228,9 @@ if prompt := st.chat_input(disabled=st.session_state.pandasai_df is None):
         render_message(explanation, st.chat_message("assistant"))
     else:
         response = st.session_state.pandasai_df.chat(prompt)
+        if response is None:
+            real_path, response = get_latest_image()
+            st.session_state.temp_images.append(real_path)
         st.session_state.dbqa_pandasai_messages.append(
             {"role": "assistant", "content": response}
         )
