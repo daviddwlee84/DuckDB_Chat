@@ -82,11 +82,15 @@ streamlit run app.py
       - [ ] SQLTableRetrieverQueryEngine + ObjectIndex (retriever)
       - [ ] Add Azure embed model
       - [ ] Option for metadata
-      - [ ] Cost analysis:
+      - [ ] Cost analysis
         - [Cost Analysis - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/understanding/evaluating/cost_analysis/root.html)
         - [Token Counting Handler - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/examples/callbacks/TokenCountingHandler.html)
         - [Usage Pattern - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/understanding/evaluating/cost_analysis/usage_pattern.html)
       - [ ] Streaming
+    - [ ] PandasAI: [gventuri/pandas-ai: PandasAI is the Python library that integrates Gen AI into pandas, making data analysis conversational](https://github.com/gventuri/pandas-ai)
+      - [ ] Show plot image properly
+      - [ ] Count Token: [Large language models (LLMs) - PandasAI](https://docs.pandas-ai.com/en/latest/LLMs/llms/)
+      - [ ] Multiple files: SmartDatalake
 
 ## Resources
 

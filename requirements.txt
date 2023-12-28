@@ -32,3 +32,6 @@ langchain-experimental
 
 # LlamaIndex
 llama-index
+
+# PandasAI
+pandasai

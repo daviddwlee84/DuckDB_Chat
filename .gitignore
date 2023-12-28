@@ -1,4 +1,7 @@
 demo/*.db
+# Used by PandasAI
+cache/
+exports/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
