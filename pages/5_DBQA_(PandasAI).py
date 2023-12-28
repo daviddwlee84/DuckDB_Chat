@@ -107,7 +107,7 @@ rephrase_query: bool = st.checkbox(
 
 
 uploaded_file = st.file_uploader(
-    "Data you want to query (support CSV, Parquet, and Json).",
+    "Data you want to query (support CSV, Parquet, Excel, and Json).",
     accept_multiple_files=False,
 )
 
@@ -132,13 +132,17 @@ else:
         st.session_state.dbqa_pandasai_uploaded_file = uploaded_file
         for img_path in st.session_state.temp_images:
             os.remove(img_path)
-            st.toast(f'Clean cache image {img_path}')
+            st.toast(f"Clean cache image {img_path}")
         st.session_state.temp_images = []
 
         if uploaded_file.name.endswith(".csv"):
             st.session_state.dbqa_pandasai_data = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(".parquet"):
             st.session_state.dbqa_pandasai_data = pd.read_parquet(uploaded_file)
+        elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
+            ".xls"
+        ):
+            st.session_state.dbqa_pandasai_data = pd.read_excel(uploaded_file)
         else:
             st.error("Please provide valid file type.")
             st.stop()

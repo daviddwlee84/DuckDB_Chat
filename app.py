@@ -82,6 +82,7 @@ st.markdown(
     2. `Natural Language to SQL` (TBD): Currently, just a pure chat
     3. `DBQA` (TDB): Will based on `Natural Language to SQL` to do search
     4. `DBQA (LlamaIndex)`: Use LlamaIndex to do DBQA. It contains SQL generation and the QA part.
+    5. `DBQA (PandasAI)`: Use PandasAI to do DBQA. Support answering (sentence, number), plotting, and show data.
 
     ---
 

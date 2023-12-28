@@ -57,7 +57,7 @@ if "dbqa_llamaindex_uploaded_file" not in st.session_state:
 sqlite_connect = sqlite3.connect(":memory:")
 
 uploaded_file = st.file_uploader(
-    "Data you want to query (support CSV, Parquet, and Json).",
+    "Data you want to query (support CSV, Parquet, Excel, and Json).",
     accept_multiple_files=False,
 )
 
@@ -72,6 +72,10 @@ else:
             st.session_state.dbqa_llamaindex_data = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(".parquet"):
             st.session_state.dbqa_llamaindex_data = pd.read_parquet(uploaded_file)
+        elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
+            ".xls"
+        ):
+            st.session_state.dbqa_llamaindex_data = pd.read_excel(uploaded_file)
         else:
             st.error("Please provide valid file type.")
             st.stop()

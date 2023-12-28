@@ -18,13 +18,13 @@ if "dbqa_uploaded_file" not in st.session_state:
     st.session_state.dbqa_uploaded_file = None
     st.session_state.db_engine = create_engine("sqlite:///:memory:")
     # st.session_state.db_engine = create_engine("sqlite:///temp.db")
-    st.session_state.data = None
+    st.session_state.dbqa_data = None
 
 sqlite_connect = sqlite3.connect(":memory:")
 # sqlite_connect = sqlite3.connect("temp.db")
 
 uploaded_file = st.file_uploader(
-    "Data you want to query (support CSV, Parquet, and Json).",
+    "Data you want to query (support CSV, Parquet, Excel, and Json).",
     accept_multiple_files=False,
 )
 
@@ -36,16 +36,20 @@ else:
         st.session_state.dbqa_uploaded_file = uploaded_file
 
         if uploaded_file.name.endswith(".csv"):
-            st.session_state.data = pd.read_csv(uploaded_file)
+            st.session_state.dbqa_data = pd.read_csv(uploaded_file)
         elif uploaded_file.name.endswith(".parquet"):
-            st.session_state.data = pd.read_parquet(uploaded_file)
+            st.session_state.dbqa_data = pd.read_parquet(uploaded_file)
+        elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
+            ".xls"
+        ):
+            st.session_state.dbqa_data = pd.read_excel(uploaded_file)
         else:
             st.error("Please provide valid file.")
             st.stop()
 
     # ProgrammingError: SQLite objects created in a thread can only be used in that same thread.
-    # st.session_state.data.to_sql("tbl", sqlite_connect)
-    st.session_state.data.to_sql(table_name, st.session_state.db_engine)
+    # st.session_state.dbqa_data.to_sql("tbl", sqlite_connect)
+    st.session_state.dbqa_data.to_sql(table_name, st.session_state.db_engine)
 
     db = SQLDatabase(
         st.session_state.db_engine,

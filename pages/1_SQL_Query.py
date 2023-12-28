@@ -81,7 +81,7 @@ duckdb_connect = st.session_state.duckdb_connect.cursor()
 # If upload multiple file, they must have same extension and schema.
 # TODO: Add option that if CSV doesn't have header
 uploaded_file = st.file_uploader(
-    "Data you want to query (support CSV, Parquet, and Json).",
+    "Data you want to query (support CSV, Parquet, Excel, and Json).",
     accept_multiple_files=False,
 )
 
@@ -119,6 +119,12 @@ else:
             st.session_state.data = duckdb.read_json(
                 uploaded_file, connection=duckdb_connect
             )
+        elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
+            ".xls"
+        ):
+            st.session_state.data = st.session_state.duckdb_connect.from_df(
+                pd.read_excel(uploaded_file)
+            )
         else:
             st.error("Invalid file extension.")
             st.stop()
@@ -142,6 +148,7 @@ else:
                 )
             )
 
+        # BUG: we shouldn't register table twice
         if auto_initial_table_schema:
             duckdb_connect.register(default_table_name, st.session_state.data)
             st.session_state.messages.extend(
@@ -188,9 +195,13 @@ else:
             )
 
 # Create alias for duckdb
+# CatalogException: Catalog Error: Failed to create view 'tbl': Existing object tbl is of type Table, trying to replace with type View
 # tbl = st.session_state.data
 if st.session_state.data is not None:
-    duckdb_connect.register(default_table_name, st.session_state.data)
+    try:
+        duckdb_connect.register(default_table_name, st.session_state.data)
+    except duckdb.CatalogException as e:
+        print(e)
 
 # duckdb.alias
 # Not working
