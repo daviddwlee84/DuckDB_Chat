@@ -15,16 +15,13 @@ st.write("# DuckDB Chat - Chat with your DB files")
 with st.sidebar:
     st.markdown(
         """
-    ## Functionality Explanation
-
-    - `SQL query`: You can try SQL query on your file
 
     ## LLM API Keys
 
-    - [Get an OpenAI API key](https://platform.openai.com/account/api-keys)
-
-    Default key is loaded from `.env`.
-    You can fill keys here or later.
+    > [Get an OpenAI API key](https://platform.openai.com/account/api-keys)
+    >
+    > Default key is loaded from `.env`.
+    > You can fill keys here or later.
     """
     )
 
@@ -79,6 +76,17 @@ with st.sidebar:
 
 st.markdown(
     """
+    ## Functionality Explanation
+
+    1. `SQL query`: You can try SQL query on your file
+    2. `Natural Language to SQL` (TBD): Currently, just a pure chat
+    3. `DBQA` (TDB): Will based on `Natural Language to SQL` to do search
+    4. `DBQA (LlamaIndex)`: Use LlamaIndex to do DBQA. It contains SQL generation and the QA part.
+
+    ---
+
+    ## Links
+
     - Github Page: [daviddwlee84/DuckDB_Chat](https://github.com/daviddwlee84/DuckDB_Chat)
     - Personal Website: [David Lee](https://dwlee-personal-website.netlify.app/)
 
