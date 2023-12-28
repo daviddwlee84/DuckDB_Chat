@@ -91,6 +91,7 @@ streamlit run app.py
       - [ ] Show plot image properly
       - [ ] Count Token: [Large language models (LLMs) - PandasAI](https://docs.pandas-ai.com/en/latest/LLMs/llms/)
       - [ ] Multiple files: SmartDatalake
+      - [ ] Agent: Clarification questions
 
 ## Resources
 

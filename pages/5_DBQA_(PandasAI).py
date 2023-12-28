@@ -98,6 +98,10 @@ if "dbqa_pandasai_uploaded_file" not in st.session_state:
 chat_mode: Literal["Single Turn", "Multi Turn"] = st.selectbox(
     "Chat Mode", ["Single Turn", "Multi Turn"]
 )
+rephrase_query: bool = st.checkbox(
+    "Rephrase Query (Only used in Multi-Turn Agent)",
+    disabled=not chat_mode == "Multi Turn",
+)
 
 uploaded_file = st.file_uploader(
     "Data you want to query (support CSV, Parquet, and Json).",
@@ -174,6 +178,8 @@ def render_message(
 
 for msg in st.session_state.dbqa_pandasai_messages:
     render_message(msg["content"], st.chat_message(msg["role"]))
+    if explanation := msg.get("explanation"):
+        render_message(explanation, st.chat_message(msg["role"]))
 
 # https://streamlit.io/generative-ai
 # TODO: make response streaming https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps#build-a-simple-chatbot-gui-with-streaming
@@ -182,10 +188,21 @@ if prompt := st.chat_input(disabled=st.session_state.pandasai_df is None):
     st.chat_message("user").write(prompt)
 
     # TODO: can't properly save image
-    response = st.session_state.pandasai_df.chat(prompt)
-    # Debug
-    # st.write(response)
-    st.session_state.dbqa_pandasai_messages.append(
-        {"role": "assistant", "content": response}
-    )
-    render_message(response, st.chat_message("assistant"))
+    # https://stackoverflow.com/questions/76513782/capture-image-response-from-pandasai-as-flask-api-response
+    if isinstance(st.session_state.pandasai_df, Agent):
+        if rephrase_query:
+            response = st.session_state.pandasai_df.rephrase_query(prompt)
+        else:
+            response = st.session_state.pandasai_df.chat(prompt)
+        explanation = st.session_state.pandasai_df.explain()
+        st.session_state.dbqa_pandasai_messages.append(
+            {"role": "assistant", "content": response, "explanation": explanation}
+        )
+        render_message(response, st.chat_message("assistant"))
+        render_message(explanation, st.chat_message("assistant"))
+    else:
+        response = st.session_state.pandasai_df.chat(prompt)
+        st.session_state.dbqa_pandasai_messages.append(
+            {"role": "assistant", "content": response}
+        )
+        render_message(response, st.chat_message("assistant"))
