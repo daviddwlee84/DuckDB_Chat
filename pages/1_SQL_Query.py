@@ -122,6 +122,7 @@ else:
         elif uploaded_file.name.endswith(".xlsx") or uploaded_file.name.endswith(
             ".xls"
         ):
+            # https://duckdb.org/docs/guides/python/relational_api_pandas.html
             st.session_state.data = st.session_state.duckdb_connect.from_df(
                 pd.read_excel(uploaded_file)
             )

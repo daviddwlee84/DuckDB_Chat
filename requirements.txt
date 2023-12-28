@@ -35,3 +35,6 @@ llama-index
 
 # PandasAI
 pandasai
+
+# Excel
+openpyxl

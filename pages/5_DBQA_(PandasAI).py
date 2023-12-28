@@ -96,6 +96,7 @@ if "dbqa_pandasai_uploaded_file" not in st.session_state:
     st.session_state.dbqa_pandasai_uploaded_file = None
     st.session_state.dbqa_pandasai_data = None
     st.session_state.temp_images = []
+    st.session_state.chat_mode = None
 
 chat_mode: Literal["Single Turn", "Multi Turn"] = st.selectbox(
     "Chat Mode", ["Single Turn", "Multi Turn"]
