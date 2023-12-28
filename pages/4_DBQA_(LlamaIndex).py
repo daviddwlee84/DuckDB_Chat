@@ -14,13 +14,15 @@ from sqlalchemy import create_engine, MetaData
 import sqlite3
 from dotenv import load_dotenv
 import os
-import logging
-import sys
 
-logging.basicConfig(
-    stream=sys.stdout, level=logging.INFO
-)  # logging.DEBUG for more verbose output
-logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
+# import tiktoken
+# from llama_index.callbacks import CallbackManager, TokenCountingHandler
+# import logging
+# import sys
+# logging.basicConfig(
+#     stream=sys.stdout, level=logging.INFO
+# )  # logging.DEBUG for more verbose output
+# logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -33,6 +35,10 @@ st.title("Database Question Answering (using LlamaIndex)")
 table_name = st.text_input(
     "Table Name (better be meaningful and related to the file you uploaded)",
     value="tbl",
+)
+additional_prompt_guide = st.text_area(
+    "Additional Prompt Guide that follows at the end of user prompt",
+    value=" (You should double quote the column name)",
 )
 
 # TODO: haven't implement SQLTableRetrieverQueryEngine
@@ -141,6 +147,8 @@ if "dbqa_llamaindex_messages" not in st.session_state:
     st.session_state["dbqa_llamaindex_messages"] = []
 
 for msg in st.session_state.dbqa_llamaindex_messages:
+    # https://discuss.streamlit.io/t/disable-latex/44995/10
+    # https://discuss.streamlit.io/t/how-to-stop-attempted-k-latex-rendering-of-1-million-or-100-000/41473
     st.chat_message(msg["role"]).write(msg["content"])
 
 # https://streamlit.io/generative-ai
@@ -169,9 +177,14 @@ if prompt := st.chat_input():
             api_version=st.session_state.azure_openai_version,
         )
 
+    # token_counter = TokenCountingHandler(
+    #     tokenizer=tiktoken.encoding_for_model("gpt-3.5-turbo").encode
+    # )
+    # callback_manager = CallbackManager([token_counter])
+    # BUG: AttributeError: 'CompletionUsage' object has no attribute 'get'
     service_context = ServiceContext.from_defaults(
         llm=llm,
-        embed_model=None,  # TODO
+        embed_model=None,  # callback_manager=callback_manager  # TODO
     )
     # llm_predictor = LLMPredictor(llm=llm)
     # service_context = ServiceContext.from_defaults(llm_predictor=llm_predictor)
@@ -203,10 +216,20 @@ if prompt := st.chat_input():
         {"role": "user", "content": prompt}
     )
     st.chat_message("user").write(prompt)
-    response = query_engine.query(prompt)
+    response = query_engine.query(prompt + additional_prompt_guide)
+
+    # token_count = {
+    #     "Embedding Tokens": token_counter.total_embedding_token_count,
+    #     "LLM Prompt Tokens": token_counter.prompt_llm_token_count,
+    #     "LLM Completion Tokens": token_counter.completion_llm_token_count,
+    #     "Total LLM Token Count": token_counter.total_llm_token_count,
+    # }
+    # # reset counts
+    # token_counter.reset_counts()
 
     # TODO: able to filter metadata and for detail result
-    assistant_content = f"**{response.response}**\n```sql\n{response.metadata.get('sql_query')}\n```\n- result: {response.metadata.get('result')}\n- column keys: {response.metadata.get('col_keys')}"
+    assistant_content = f"**{response.response}**\n```sql\n{response.metadata.get('sql_query')}\n```\n- result: {response.metadata.get('result')}\n- column keys: {response.metadata.get('col_keys')}"  # \n- token count: {token_count}"
+    assistant_content = assistant_content.replace("$", "\\$")
     st.session_state.dbqa_llamaindex_messages.append(
         {"role": "assistant", "content": assistant_content}
     )

@@ -82,6 +82,11 @@ streamlit run app.py
       - [ ] SQLTableRetrieverQueryEngine + ObjectIndex (retriever)
       - [ ] Add Azure embed model
       - [ ] Option for metadata
+      - [ ] Cost analysis:
+        - [Cost Analysis - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/understanding/evaluating/cost_analysis/root.html)
+        - [Token Counting Handler - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/examples/callbacks/TokenCountingHandler.html)
+        - [Usage Pattern - LlamaIndex 🦙 0.9.22](https://docs.llamaindex.ai/en/stable/understanding/evaluating/cost_analysis/usage_pattern.html)
+      - [ ] Streaming
 
 ## Resources
 
