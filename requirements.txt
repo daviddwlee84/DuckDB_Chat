@@ -22,8 +22,13 @@ python-dotenv
 
 # SQL
 sqlalchemy
+# PostgreSQL
+# psycopg2
 
 # LLM
 openai
 langchain
 langchain-experimental
+
+# LlamaIndex
+llama-index
