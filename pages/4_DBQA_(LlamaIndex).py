@@ -52,7 +52,6 @@ llamaindex_query_engine: Literal[
 if "dbqa_llamaindex_uploaded_file" not in st.session_state:
     st.session_state.dbqa_llamaindex_uploaded_file = None
     st.session_state.dbqa_llamaindex_db_engine = create_engine("sqlite:///:memory:")
-    st.session_state.dbqa_llamaindex_data = None
 
 sqlite_connect = sqlite3.connect(":memory:")
 
@@ -63,6 +62,7 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is None:
     st.session_state.dbqa_llamaindex_messages = []
+    st.session_state.dbqa_llamaindex_data = None
 else:
     if st.session_state.dbqa_llamaindex_uploaded_file != uploaded_file:
         st.session_state.dbqa_llamaindex_messages = []
@@ -162,7 +162,9 @@ for msg in st.session_state.dbqa_llamaindex_messages:
 
 # https://streamlit.io/generative-ai
 # TODO: make response streaming https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps#build-a-simple-chatbot-gui-with-streaming
-if prompt := st.chat_input():
+if prompt := st.chat_input(
+    "Please input question. (Will end with the `additional prompt guide`)", disabled=st.session_state.dbqa_llamaindex_data is None
+):
     if openai_selection == "OpenAI":
         if not st.session_state.openai_api_key:
             st.warning("🥸 Please add your OpenAI API key to continue.")

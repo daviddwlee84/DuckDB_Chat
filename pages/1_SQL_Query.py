@@ -98,6 +98,20 @@ else:
                 st.session_state.data = duckdb.read_csv(
                     uploaded_file, connection=duckdb_connect
                 )
+            except duckdb.InvalidInputException:
+                # BUG
+                # duckdb.InvalidInputException: Invalid Input Error: Error in file "DUCKDB_INTERNAL_OBJECTSTORE://4b3e93e58df2b90e" at line 1 in column "0": Invalid unicode (byte sequence mismatch) detected in CSV file. Parser options:
+                # file=DUCKDB_INTERNAL_OBJECTSTORE://4b3e93e58df2b90e
+                # delimiter=',' (auto detected)
+                # quote='"' (auto detected)
+                # escape='' (auto detected)
+                # header=0 (auto detected)
+                # sample_size=20480
+                # ignore_errors=0
+                # all_varchar=0
+                st.session_state.data = duckdb.read_csv(
+                    uploaded_file, connection=duckdb_connect, encoding="gbk"
+                )
             except UnicodeDecodeError:
                 st.session_state.data = duckdb.read_csv(
                     uploaded_file, connection=duckdb_connect, encoding="gbk"

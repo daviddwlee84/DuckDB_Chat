@@ -94,7 +94,6 @@ elif openai_selection == "Azure OpenAI":
 
 if "dbqa_pandasai_uploaded_file" not in st.session_state:
     st.session_state.dbqa_pandasai_uploaded_file = None
-    st.session_state.dbqa_pandasai_data = None
     st.session_state.temp_images = []
     st.session_state.chat_mode = None
 
@@ -117,6 +116,7 @@ CHARTS_PATH = os.path.join(curr_dir, "../static/images/")
 
 if uploaded_file is None:
     st.session_state.dbqa_pandasai_messages = []
+    st.session_state.dbqa_pandasai_data = None
     st.session_state.pandasai_df = None
 else:
     config = {
@@ -217,7 +217,10 @@ for msg in st.session_state.dbqa_pandasai_messages:
 
 # https://streamlit.io/generative-ai
 # TODO: make response streaming https://docs.streamlit.io/knowledge-base/tutorials/build-conversational-apps#build-a-simple-chatbot-gui-with-streaming
-if prompt := st.chat_input(disabled=st.session_state.pandasai_df is None):
+if prompt := st.chat_input(
+    "Please input question. (you can ask to plot)",
+    disabled=st.session_state.pandasai_df is None,
+):
     st.session_state.dbqa_pandasai_messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
