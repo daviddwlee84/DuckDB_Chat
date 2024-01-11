@@ -87,12 +87,31 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 - DuckDB SQL Syntax: [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
 - DuckDB Data Types: [Data Types - DuckDB](https://duckdb.org/docs/sql/data_types/overview)
 - DuckDB Functions: [Functions - DuckDB](https://duckdb.org/docs/sql/functions/overview)
-- DuckDB Meta Queries:
+- DuckDB Meta Queries: (**bold** is recommend)
   - [`DESCRIBE {default_table_name};`](https://duckdb.org/docs/guides/meta/describe): Describe Table (show column names and types)
-  - [`SHOW TABLES;` `SHOW ALL TABLES;`](https://duckdb.org/docs/guides/meta/list_tables): List Tables
-  - [`EXPLAIN ...;` `SET explain_output = 'all'; EXPLAIN ...`](https://duckdb.org/docs/guides/meta/explain): Inspect Query Plan
-  - [`EXPLAIN ANALYZE ...;`](https://duckdb.org/docs/guides/meta/explain_analyze): Profile Queries
-  - [`SUMMARIZE {default_table_name};`](https://duckdb.org/docs/guides/meta/summarize): Summarize (show value statistics)
+  - [`SHOW TABLES;` **`SHOW ALL TABLES;`**](https://duckdb.org/docs/guides/meta/list_tables): List Tables
+  - [`EXPLAIN ...;` **`SET explain_output = 'all'; EXPLAIN ...`**](https://duckdb.org/docs/guides/meta/explain): Inspect Query Plan
+  - [**`EXPLAIN ANALYZE ...;`**](https://duckdb.org/docs/guides/meta/explain_analyze): Profile Queries
+  - [`SUMMARIZE {default_table_name};` `SUMMARIZE SELECT ...;`](https://duckdb.org/docs/guides/meta/summarize): **Summarize (show value statistics)**
+  - [DuckDB Environment](https://duckdb.org/docs/guides/meta/duckdb_environment)
+    - `SELECT version();`
+    - `PRAGMA version;`
+    - `SELECT * FROM duckdb_columns()`: columns
+    - `SELECT * FROM duckdb_constraints()`: constraints
+    - `SELECT * FROM duckdb_databases()`: lists the databases that are accessible from within the current DuckDB process
+    - `SELECT * FROM duckdb_dependencies()`: dependencies between objects
+    - `SELECT * FROM duckdb_extensions()`: extensions
+    - `SELECT * FROM duckdb_functions()`: functions
+    - `SELECT * FROM duckdb_indexes()`: secondary indexes
+    - `SELECT * FROM duckdb_keywords()`: DuckDB’s keywords and reserved words
+    - `SELECT * FROM duckdb_optimizers()`: the available optimization rules in the DuckDB instance
+    - `SELECT * FROM duckdb_schemas()`: schemas
+    - `SELECT * FROM duckdb_sequences()`: sequences
+    - `SELECT * FROM duckdb_settings()`: settings
+    - `SELECT * FROM duckdb_tables()`: base tables
+    - `SELECT * FROM duckdb_types()`: data types
+    - `SELECT * FROM duckdb_views()`: views
+    - `SELECT * FROM duckdb_temporary_files()`: the temporary files DuckDB has written to disk, to offload data from memory
 """
     )
 
