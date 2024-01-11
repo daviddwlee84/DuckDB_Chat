@@ -76,7 +76,7 @@ with st.expander("Settings"):
 
 with st.expander("Hints and Syntax"):
     st.markdown(
-        """
+        f"""
 Use `"column_name"` for column name and `'string'` for string literal.
 
 You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Time by `timestamp_column::TIME`
@@ -84,6 +84,9 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 - DuckDB SQL Syntax: [SQL Introduction - DuckDB](https://duckdb.org/docs/sql/introduction)
 - DuckDB Data Types: [Data Types - DuckDB](https://duckdb.org/docs/sql/data_types/overview)
 - DuckDB Functions: [Functions - DuckDB](https://duckdb.org/docs/sql/functions/overview)
+- DuckDB Meta Queries:
+  - [`DESCRIBE {default_table_name};`](https://duckdb.org/docs/guides/meta/describe)
+  - [`SHOW TABLES;` `SHOW ALL TABLES;](https://duckdb.org/docs/guides/meta/list_tables)
 """
     )
 
@@ -95,7 +98,7 @@ with st.expander("Usage"):
         - Do not use preserve keyword like "table" for the table name.
         - You can just type in table name, this will be equivalent to preview the table (i.e. `SELECT * FROM table;`).
         - Add `;` at the end to disable all autofill stuff like auto add FROM etc.
-        - Now support DuckDB statement like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
+        - Now support DuckDB statement (meta queries) like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
         - You can create new table using [`CREATE TABLE new_table_name AS ...`](https://duckdb.org/docs/sql/statements/create_table.html). Also, I created an alias: `new_table_name = ...`
         - Remove table using [`DROP TABLE table_name`](https://duckdb.org/docs/sql/statements/drop.html)
         - Use _create table alias_ will automatically override same name table. This is equivalent to [`CREATE OR REPLACE TABLE...`](https://duckdb.org/docs/archive/0.8.1/sql/statements/create_table.html#create-or-replace)
@@ -297,9 +300,15 @@ for i, message in enumerate(st.session_state.messages):
                             f"Time usage: {message['time_usage']:.2f} seconds; Total rows {row}; Total columns {col}."
                         )
                 else:
-                    st.error(message["content"])
-                    if show_information:
-                        st.caption(f"Time usage: {message['time_usage']:.2f} seconds.")
+                    # For EXPLAIN
+                    if message["time_usage"] is None:
+                        st.text(message["content"])
+                    else:
+                        st.error(message["content"])
+                        if show_information:
+                            st.caption(
+                                f"Time usage: {message['time_usage']:.2f} seconds."
+                            )
     else:
         with st.chat_message(name="assistant"):
             if message["role"] == "initial":
@@ -319,42 +328,42 @@ if prompt := st.chat_input(
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
 
-        if create_table_alias := create_table_alias_re.search(prompt):
-            # https://duckdb.org/docs/sql/statements/create_table.html
-            latest_table_name = create_table_alias.group(1)
-            expression = create_table_alias.group(2)
-            # NOTE: use OR REPLACE can support same table name override
-            if use_view_over_table:
-                # https://duckdb.org/docs/sql/statements/create_view.html
-                prompt = f"CREATE OR REPLACE VIEW {latest_table_name} AS {expression}"
-            else:
-                prompt = f"CREATE OR REPLACE TABLE {latest_table_name} AS {expression}"
+        if not prompt.endswith(";"):
+            if create_table_alias := create_table_alias_re.search(prompt):
+                # https://duckdb.org/docs/sql/statements/create_table.html
+                latest_table_name = create_table_alias.group(1)
+                expression = create_table_alias.group(2)
+                # NOTE: use OR REPLACE can support same table name override
+                if use_view_over_table:
+                    # https://duckdb.org/docs/sql/statements/create_view.html
+                    prompt = (
+                        f"CREATE OR REPLACE VIEW {latest_table_name} AS {expression}"
+                    )
+                else:
+                    prompt = (
+                        f"CREATE OR REPLACE TABLE {latest_table_name} AS {expression}"
+                    )
 
-        # if prompt.upper().startswith("SELECT") and "FROM" not in prompt.upper():
-        if (
-            auto_from_table
-            and "FROM" not in prompt.upper()
-            and not prompt.endswith(";")
-        ):
-            if "SELECT" in prompt:
-                prompt = prompt.replace(
-                    "SELECT", f"FROM {st.session_state.latest_table} SELECT"
-                )
-            elif "select" in prompt:
-                prompt = prompt.replace(
-                    "select", f"FROM {st.session_state.latest_table} SELECT"
-                )
+            if auto_from_table and "FROM" not in prompt.upper():
+                if "SELECT" in prompt:
+                    prompt = prompt.replace(
+                        "SELECT", f"FROM {st.session_state.latest_table} SELECT"
+                    )
+                elif "select" in prompt:
+                    prompt = prompt.replace(
+                        "select", f"FROM {st.session_state.latest_table} SELECT"
+                    )
 
-        if "SELECT" not in prompt.upper():
-            if prompt.strip() in st.session_state.current_active_tables:
-                # prompt is table name
-                # If only table name (without SELECT and FROM), then by default just output the table
-                prompt = f"FROM {prompt.strip()} SELECT *;"
-            else:
-                # https://duckdb.org/docs/sql/functions/char.html
-                # https://duckdb.org/docs/sql/functions/patternmatching.html
-                # Special case, prompt is a quick test
-                prompt = f"SELECT {prompt};"
+            if "SELECT" not in prompt.upper():
+                if prompt.strip() in st.session_state.current_active_tables:
+                    # prompt is table name
+                    # If only table name (without SELECT and FROM), then by default just output the table
+                    prompt = f"FROM {prompt.strip()} SELECT *;"
+                else:
+                    # https://duckdb.org/docs/sql/functions/char.html
+                    # https://duckdb.org/docs/sql/functions/patternmatching.html
+                    # Special case, prompt is a quick test
+                    prompt = f"SELECT {prompt};"
 
         if is_creating_table := create_table_name_re.search(prompt):
             new_table_name = is_creating_table.group("table_name")
@@ -362,30 +371,6 @@ if prompt := st.chat_input(
             new_table_name = (
                 None if not keep_latest_statement_as_last_table else TEMP_TABLE_NAME
             )
-            # BUG: not all the prompt are SQL expression, some of them are DuckDB specific command like SHOW TABLES
-            # if st.session_state.latest_table and keep_latest_statement_as_last_table:
-            #     if use_view_over_table:
-            #         try:
-            #             duckdb.execute(
-            #                 f"DROP TABLE IF EXISTS {new_table_name};",
-            #                 connection=duckdb_connect,
-            #             )
-            #         except duckdb.CatalogException as e:
-            #             pass
-
-            #         duckdb.execute(
-            #             f"CREATE OR REPLACE VIEW {TEMP_TABLE_NAME} AS {prompt}",
-            #             connection=duckdb_connect,
-            #         )
-            #     else:
-            #         duckdb.execute(
-            #             f"DROP TABLE IF EXISTS {TEMP_TABLE_NAME};",
-            #             connection=duckdb_connect,
-            #         )
-            #         duckdb.execute(
-            #             f"CREATE TABLE {TEMP_TABLE_NAME} AS {prompt}",
-            #             connection=duckdb_connect,
-            #         )
 
         # TODO: if use aggregate function but without GROUP BY, automatically inference columns
         # BinderException: Binder Error: column "symbol" must appear in the GROUP BY clause or must be part of an aggregate function.
@@ -444,12 +429,20 @@ if prompt := st.chat_input(
             finally:
                 time_usage = time.perf_counter() - start
                 if result_df is not None:
-                    message_placeholder.dataframe(result_df)
-                    if show_information:
-                        row, col = result_df.shape
-                        st.caption(
-                            f"Time usage: {time_usage:.2f} seconds; Total rows {row}; Total columns {col}."
-                        )
+                    if prompt.upper().startswith("EXPLAIN"):
+                        # https://duckdb.org/docs/guides/meta/explain
+                        # TODO: Special output for 'all' mode
+                        # SET explain_output = 'all';  EXPLAIN SELECT * FROM tbl;
+                        result_df = result_df["explain_value"][0]
+                        message_placeholder.text(result_df)
+                        time_usage = None
+                    else:
+                        message_placeholder.dataframe(result_df)
+                        if show_information:
+                            row, col = result_df.shape
+                            st.caption(
+                                f"Time usage: {time_usage:.2f} seconds; Total rows {row}; Total columns {col}."
+                            )
                 else:
                     message_placeholder.error(error)
                     if show_information:
