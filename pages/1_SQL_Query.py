@@ -87,6 +87,7 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 - DuckDB Meta Queries:
   - [`DESCRIBE {default_table_name};`](https://duckdb.org/docs/guides/meta/describe)
   - [`SHOW TABLES;` `SHOW ALL TABLES;](https://duckdb.org/docs/guides/meta/list_tables)
+  - [`EXPLAIN ...;` `SET explain_output = 'all'; EXPLAIN ...`](https://duckdb.org/docs/guides/meta/explain)
 """
     )
 
@@ -293,16 +294,25 @@ for i, message in enumerate(st.session_state.messages):
                     st.code(message["content"][1], language="sql")
             elif message["role"] == "assistant":
                 if isinstance(message["content"], pd.DataFrame):
-                    st.dataframe(message["content"])
-                    if show_information and message.get("time_usage"):
-                        row, col = message["content"].shape
-                        st.caption(
-                            f"Time usage: {message['time_usage']:.2f} seconds; Total rows {row}; Total columns {col}."
-                        )
+                    if not message.get("time_usage", "is_initial_dfs") is None:
+                        st.dataframe(message["content"])
+                        if show_information and message.get("time_usage"):
+                            row, col = message["content"].shape
+                            st.caption(
+                                f"Time usage: {message['time_usage']:.2f} seconds; Total rows {row}; Total columns {col}."
+                            )
+                    else:
+                        # For EXPLAIN
+                        lines = []
+                        for i, row in message["content"].iterrows():
+                            lines.append(row["explain_key"])
+                            lines.append(row["explain_value"])
+                        st.text("\n".join(lines))
                 else:
-                    # For EXPLAIN
+                    # For EXPLAIN (legacy)
                     if message["time_usage"] is None:
                         st.text(message["content"])
+
                     else:
                         st.error(message["content"])
                         if show_information:
@@ -429,13 +439,16 @@ if prompt := st.chat_input(
             finally:
                 time_usage = time.perf_counter() - start
                 if result_df is not None:
-                    if prompt.upper().startswith("EXPLAIN"):
+                    # TODO: improve this to prevent column contains EXPLAIN etc.
+                    # if prompt.upper().startswith("EXPLAIN") and :
+                    if "EXPLAIN" in prompt.upper():
                         # https://duckdb.org/docs/guides/meta/explain
-                        # TODO: Special output for 'all' mode
-                        # SET explain_output = 'all';  EXPLAIN SELECT * FROM tbl;
-                        result_df = result_df["explain_value"][0]
-                        message_placeholder.text(result_df)
-                        time_usage = None
+                        lines = []
+                        for i, row in result_df.iterrows():
+                            lines.append(row["explain_key"])
+                            lines.append(row["explain_value"])
+                        message_placeholder.text("\n".join(lines))
+                        time_usage = None # NOTE: (Adhoc) we use time_usage = None to indicate it is a EXPLAIN dataframe
                     else:
                         message_placeholder.dataframe(result_df)
                         if show_information:
