@@ -44,10 +44,13 @@ with st.expander("Settings"):
     st.text("Chat initial settings (take effect when uploading new file):")
     auto_initial_table = st.checkbox("Print table preview when file is uploaded", True)
     auto_initial_table_schema = st.checkbox(
-        "Print table schema when file is uploaded", True
+        "Print table schema when file is uploaded", False
     )
     auto_initial_table_status = st.checkbox(
-        "Print table statistics when file is uploaded", False
+        "Print table statistics (use SUMMARIZE) when file is uploaded", True
+    )
+    auto_initial_table_status2 = st.checkbox(
+        "Print table statistics (use Pandas) when file is uploaded", False
     )
     auto_initial_memory_status = st.checkbox(
         "Show memory consumption of the DataFrame", False
@@ -85,9 +88,11 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 - DuckDB Data Types: [Data Types - DuckDB](https://duckdb.org/docs/sql/data_types/overview)
 - DuckDB Functions: [Functions - DuckDB](https://duckdb.org/docs/sql/functions/overview)
 - DuckDB Meta Queries:
-  - [`DESCRIBE {default_table_name};`](https://duckdb.org/docs/guides/meta/describe)
-  - [`SHOW TABLES;` `SHOW ALL TABLES;](https://duckdb.org/docs/guides/meta/list_tables)
-  - [`EXPLAIN ...;` `SET explain_output = 'all'; EXPLAIN ...`](https://duckdb.org/docs/guides/meta/explain)
+  - [`DESCRIBE {default_table_name};`](https://duckdb.org/docs/guides/meta/describe): Describe Table (show column names and types)
+  - [`SHOW TABLES;` `SHOW ALL TABLES;`](https://duckdb.org/docs/guides/meta/list_tables): List Tables
+  - [`EXPLAIN ...;` `SET explain_output = 'all'; EXPLAIN ...`](https://duckdb.org/docs/guides/meta/explain): Inspect Query Plan
+  - [`EXPLAIN ANALYZE ...;`](https://duckdb.org/docs/guides/meta/explain_analyze): Profile Queries
+  - [`SUMMARIZE {default_table_name};`](https://duckdb.org/docs/guides/meta/summarize): Summarize (show value statistics)
 """
     )
 
@@ -216,8 +221,8 @@ else:
                 )
             )
 
-        # BUG: we shouldn't register table twice
         if auto_initial_table_schema:
+            # TODO: (Adhoc) we shouldn't register table twice
             duckdb_connect.register(default_table_name, st.session_state.data)
             st.session_state.messages.extend(
                 (
@@ -235,6 +240,23 @@ else:
             )
 
         if auto_initial_table_status:
+            # TODO: (Adhoc) we shouldn't register table twice
+            duckdb_connect.register(default_table_name, st.session_state.data)
+            st.session_state.messages.extend(
+                (
+                    {
+                        "role": "initial",
+                        "content": f"Summary of table `{default_table_name}`",
+                    },
+                    {
+                        "role": "assistant",
+                        "content": duckdb_connect.execute(
+                            f"SUMMARIZE {default_table_name};"
+                        ).df(),
+                    },
+                )
+            )
+        if auto_initial_table_status2:
             st.session_state.messages.extend(
                 (
                     {
@@ -310,7 +332,7 @@ for i, message in enumerate(st.session_state.messages):
                         st.text("\n".join(lines))
                 else:
                     # For EXPLAIN (legacy)
-                    if message["time_usage"] is None:
+                    if message.get("time_usage", "is_initial_dfs") is None:
                         st.text(message["content"])
 
                     else:
@@ -448,7 +470,7 @@ if prompt := st.chat_input(
                             lines.append(row["explain_key"])
                             lines.append(row["explain_value"])
                         message_placeholder.text("\n".join(lines))
-                        time_usage = None # NOTE: (Adhoc) we use time_usage = None to indicate it is a EXPLAIN dataframe
+                        time_usage = None  # NOTE: (Adhoc) we use time_usage = None to indicate it is a EXPLAIN dataframe
                     else:
                         message_placeholder.dataframe(result_df)
                         if show_information:
