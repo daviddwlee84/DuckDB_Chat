@@ -4,8 +4,14 @@ import time
 import pandas as pd
 import re
 
-create_table_name_re = re.compile(r"(?i)create\s+table\s+(\w+)\s+as")
+# create_table_name_re = re.compile(r"(?i)create\s+table\s+(\w+)\s+as")
+# Also support view
+create_table_name_re = re.compile(
+    r"(?i)create\s+(?:or\s+replace\s+)?(?:view|table)\s+(?P<table_name>\w+)\s+as"
+)
 create_table_alias_re = re.compile(r"(?i)(\w+)\s*=\s*(.*)")
+
+TEMP_TABLE_NAME = "_temp"
 
 # import shutil
 # import os
@@ -54,6 +60,14 @@ with st.expander("Settings"):
         "Always try drop table if going to create new one.",
         True,
     )
+    keep_latest_statement_as_last_table = st.checkbox(
+        f"Keep latest statement as last table (called table {TEMP_TABLE_NAME}) (Buggy)",
+        False,
+    )
+    use_view_over_table = st.checkbox(
+        f"Use VIEW over TABLE",
+        False,
+    )
     row_limit = st.number_input("Maximum rows to show (`<= 0` means no limit)", value=0)
 
 with st.expander("Hints and Syntax"):
@@ -78,6 +92,7 @@ st.markdown(
     - Now support DuckDB statement like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
     - You can create new table using [`CREATE TABLE new_table_name AS ...`](https://duckdb.org/docs/sql/statements/create_table.html). Also, I created an alias: `new_table_name = ...`
     - Remove table using [`DROP TABLE table_name`](https://duckdb.org/docs/sql/statements/drop.html)
+    - You can create view using [`CREATE OR REPLACE VIEW new_view_name AS ...`](https://duckdb.org/docs/sql/statements/create_view.html). Drop it is similar to table [`DROP VIEW IF EXISTS view_name`](https://duckdb.org/docs/sql/statements/drop.html)
     """
 )
 
@@ -235,16 +250,16 @@ else:
                 )
             )
 
-st.text(
-    f"Latest used table {st.session_state.latest_table}; Current active tables: {st.session_state.current_active_tables}"
-)
-
 # Create alias for duckdb
 # CatalogException: Catalog Error: Failed to create view 'tbl': Existing object tbl is of type Table, trying to replace with type View
 # tbl = st.session_state.data
 if st.session_state.data is not None:
     try:
+        # This will create VIEW instead of TABLE
         duckdb_connect.register(default_table_name, st.session_state.data)
+        if keep_latest_statement_as_last_table:
+            duckdb_connect.register(TEMP_TABLE_NAME, st.session_state.data)
+            st.session_state.current_active_tables.add(TEMP_TABLE_NAME)
     except duckdb.CatalogException as e:
         print(e)
 
@@ -285,18 +300,6 @@ for i, message in enumerate(st.session_state.messages):
 if prompt := st.chat_input(
     "Please input SQL query.", disabled=st.session_state.data is None
 ):
-    # if not show_and_save_actual_prompt:
-    #     st.session_state.messages.append(
-    #         {"role": "user", "content": prompt, "time_usage": None}
-    #     )
-    #     with st.chat_message("user"):
-    #         st.code(prompt, language="sql")
-    #     user_message_placeholder = None
-    # else:
-    #     old_prompt = prompt
-    #     with st.chat_message("user"):
-    #         user_message_placeholder = st.empty()
-
     with st.chat_message("user"):
         user_message_placeholder = st.empty()
         if show_and_save_actual_prompt:
@@ -315,24 +318,76 @@ if prompt := st.chat_input(
             # If only table name (without SELECT and FROM), then by default just output the table
             prompt = f"FROM {prompt.strip()} SELECT *"
 
-        if prompt.upper().startswith("SELECT") and "FROM" not in prompt.upper():
-            prompt = f"FROM {default_table_name} " + prompt
-
         if create_table_alias := create_table_alias_re.search(prompt):
             # https://duckdb.org/docs/sql/statements/create_table.html
-            temp_table_name = create_table_alias.group(1)
+            latest_table_name = create_table_alias.group(1)
             expression = create_table_alias.group(2)
-            prompt = f"CREATE TABLE {temp_table_name} AS {expression}"
+            if use_view_over_table:
+                # https://duckdb.org/docs/sql/statements/create_view.html
+                prompt = f"CREATE OR REPLACE VIEW {latest_table_name} AS {expression}"
+            else:
+                prompt = f"CREATE TABLE {latest_table_name} AS {expression}"
+            # TODO: solve is table exist issue
+            # assert latest_table_name not in expression
+
+        # if prompt.upper().startswith("SELECT") and "FROM" not in prompt.upper():
+        if "FROM" not in prompt.upper():
+            if "SELECT" in prompt:
+                prompt = prompt.replace(
+                    "SELECT", f"FROM {st.session_state.latest_table} SELECT"
+                )
+            else:
+                prompt = prompt.replace(
+                    "select", f"FROM {st.session_state.latest_table} SELECT"
+                )
 
         if is_creating_table := create_table_name_re.search(prompt):
-            new_table_name = is_creating_table.group(1)
+            new_table_name = is_creating_table.group("table_name")
+            # BUG: if assign to table itself will cause error
             if try_drop_table_before_creating:
                 # https://duckdb.org/docs/sql/statements/drop.html
-                duckdb.execute(
-                    f"DROP TABLE IF EXISTS {new_table_name};", connection=duckdb_connect
-                )
+                try:
+                    duckdb.execute(
+                        f"DROP TABLE IF EXISTS {new_table_name};",
+                        connection=duckdb_connect,
+                    )
+                except duckdb.CatalogException as e:
+                    duckdb.execute(
+                        f"DROP VIEW IF EXISTS {new_table_name};",
+                        connection=duckdb_connect,
+                    )
         else:
-            new_table_name = None
+            new_table_name = (
+                None if not keep_latest_statement_as_last_table else TEMP_TABLE_NAME
+            )
+            # BUG: not all the prompt are SQL expression, some of them are DuckDB specific command like SHOW TABLES
+            # if st.session_state.latest_table and keep_latest_statement_as_last_table:
+            #     if use_view_over_table:
+            #         try:
+            #             duckdb.execute(
+            #                 f"DROP TABLE IF EXISTS {new_table_name};",
+            #                 connection=duckdb_connect,
+            #             )
+            #         except duckdb.CatalogException as e:
+            #             pass
+
+            #         duckdb.execute(
+            #             f"CREATE OR REPLACE VIEW {TEMP_TABLE_NAME} AS {prompt}",
+            #             connection=duckdb_connect,
+            #         )
+            #     else:
+            #         duckdb.execute(
+            #             f"DROP TABLE IF EXISTS {TEMP_TABLE_NAME};",
+            #             connection=duckdb_connect,
+            #         )
+            #         duckdb.execute(
+            #             f"CREATE TABLE {TEMP_TABLE_NAME} AS {prompt}",
+            #             connection=duckdb_connect,
+            #         )
+
+        # TODO: if use aggregate function but without GROUP BY, automatically inference columns
+        # BinderException: Binder Error: column "symbol" must appear in the GROUP BY clause or must be part of an aggregate function.
+        # Either add it to the GROUP BY list, or use "ANY_VALUE(symbol)" if the exact value of "symbol" is not important.
 
         # TODO: not sure if this part make sense. Ideally, user should be aware of what they are doing.
         # (operation can cancel when it took too much time)
@@ -343,12 +398,6 @@ if prompt := st.chat_input(
                 st.toast("User has override row limit.")
             else:
                 prompt += f" LIMIT {row_limit};"
-
-        # if show_and_save_actual_prompt:
-        #     user_message_placeholder.code(prompt, language="sql")
-        #     st.session_state.messages.append(
-        #         {"role": "user", "content": (old_prompt, prompt), "time_usage": None}
-        #     )
 
         st.session_state.messages.append(
             {"role": "user", "content": (old_prompt, prompt), "time_usage": None}
@@ -364,13 +413,22 @@ if prompt := st.chat_input(
             try:
                 result = duckdb.execute(prompt, connection=duckdb_connect)
             except Exception as e:
+                # except duckdb.CatalogException as e:
+
+                # CatalogException
+
                 error = e
                 result_df = None
                 # if new_table_name:
                 #     # Create new table failed, we need to remove table
                 #     # Catalog Error: Table with name "tbl2" already exists!
                 #     duckdb.execute(f"DROP TABLE {new_table_name};")
+
+                # Binder Error: * expression without FROM clause!
+                # TODO
             else:
+                # Success
+
                 error = None
                 result_df = result.df()
                 if new_table_name:
@@ -399,6 +457,27 @@ if prompt := st.chat_input(
             "time_usage": time_usage,
         }
     )
+
+with st.sidebar:
+    messages = []
+    # TODO: show memory usage..?
+    messages.append("Current active tables:")
+    for table in st.session_state.current_active_tables:
+        messages.append(f"- {table}")
+    messages.append(f"\nLatest used table: `{st.session_state.latest_table}`")
+    if st.session_state.latest_table:
+        messages.append("\nPreview:")
+    st.markdown("\n".join(messages))
+    if st.session_state.latest_table:
+        temp_df = duckdb.sql(
+            f"SELECT * FROM {st.session_state.latest_table};",
+            connection=duckdb_connect,
+        ).df()
+        st.dataframe(temp_df.head(5))
+        row, col = temp_df.shape
+        st.markdown(f"Total rows {row}; Total columns {col}")
+        st.markdown("Available columns:\n")
+        st.write(temp_df.columns)
 
 # TODO: support simple plot options for each dataframe
 #     if show_plot_button:
