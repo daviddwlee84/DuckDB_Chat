@@ -56,16 +56,16 @@ with st.expander("Settings"):
         "Show and save actual prompt (automatically modified). Good for debugging.",
         True,
     )
-    try_drop_table_before_creating = st.checkbox(
-        "Always try drop table if going to create new one.",
-        True,
-    )
+    # try_drop_table_before_creating = st.checkbox(
+    #     "Always try drop table if going to create new one.",
+    #     True,
+    # )
     keep_latest_statement_as_last_table = st.checkbox(
-        f"Keep latest statement as last table (called table {TEMP_TABLE_NAME}) (Buggy)",
+        f"Keep latest statement as last table (called table {TEMP_TABLE_NAME}) (Buggy, better not use)",
         False,
     )
     use_view_over_table = st.checkbox(
-        f"Use VIEW over TABLE",
+        f"Use VIEW over TABLE (Buggy, better not use)",
         False,
     )
     row_limit = st.number_input("Maximum rows to show (`<= 0` means no limit)", value=0)
@@ -83,18 +83,20 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
 """
     )
 
-# TODO: customized table name
-st.markdown(
-    f"""
-    - Table name alias is `{default_table_name}`. Do things like `SELECT * FROM {default_table_name};`.
-    - Note that, the `FROM {default_table_name}` can be omitted now. You can `SELECT *` which implies the use of table `{default_table_name}`.
-    - Do not use preserve keyword like "table" for the table name.
-    - Now support DuckDB statement like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
-    - You can create new table using [`CREATE TABLE new_table_name AS ...`](https://duckdb.org/docs/sql/statements/create_table.html). Also, I created an alias: `new_table_name = ...`
-    - Remove table using [`DROP TABLE table_name`](https://duckdb.org/docs/sql/statements/drop.html)
-    - You can create view using [`CREATE OR REPLACE VIEW new_view_name AS ...`](https://duckdb.org/docs/sql/statements/create_view.html). Drop it is similar to table [`DROP VIEW IF EXISTS view_name`](https://duckdb.org/docs/sql/statements/drop.html)
-    """
-)
+with st.expander("Usage"):
+    st.markdown(
+        f"""
+        - Table name alias is `{default_table_name}`. Do things like [`SELECT * FROM {default_table_name};`](https://duckdb.org/docs/archive/0.8.1/sql/statements/select).
+        - Note that, the `FROM {default_table_name}` can be omitted now. You can `SELECT *` which implies the use of table `{default_table_name}`.
+        - Do not use preserve keyword like "table" for the table name.
+        - You can just type in table name, this will be equivalent to preview the table (i.e. `SELECT * FROM table`).
+        - Now support DuckDB statement like `SHOW TABLES;`, `DESCRIBE {default_table_name};`, etc.
+        - You can create new table using [`CREATE TABLE new_table_name AS ...`](https://duckdb.org/docs/sql/statements/create_table.html). Also, I created an alias: `new_table_name = ...`
+        - Remove table using [`DROP TABLE table_name`](https://duckdb.org/docs/sql/statements/drop.html)
+        - Use _create table alias_ will automatically override same name table. This is equivalent to [`CREATE OR REPLACE TABLE...`](https://duckdb.org/docs/archive/0.8.1/sql/statements/create_table.html#create-or-replace)
+        - You can create view using [`CREATE OR REPLACE VIEW new_view_name AS ...`](https://duckdb.org/docs/sql/statements/create_view.html). Drop it is similar to table [`DROP VIEW IF EXISTS view_name`](https://duckdb.org/docs/sql/statements/drop.html)
+        """
+    )
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -322,13 +324,12 @@ if prompt := st.chat_input(
             # https://duckdb.org/docs/sql/statements/create_table.html
             latest_table_name = create_table_alias.group(1)
             expression = create_table_alias.group(2)
+            # NOTE: use OR REPLACE can support same table name override
             if use_view_over_table:
                 # https://duckdb.org/docs/sql/statements/create_view.html
                 prompt = f"CREATE OR REPLACE VIEW {latest_table_name} AS {expression}"
             else:
-                prompt = f"CREATE TABLE {latest_table_name} AS {expression}"
-            # TODO: solve is table exist issue
-            # assert latest_table_name not in expression
+                prompt = f"CREATE OR REPLACE TABLE {latest_table_name} AS {expression}"
 
         # if prompt.upper().startswith("SELECT") and "FROM" not in prompt.upper():
         if "FROM" not in prompt.upper():
@@ -343,19 +344,6 @@ if prompt := st.chat_input(
 
         if is_creating_table := create_table_name_re.search(prompt):
             new_table_name = is_creating_table.group("table_name")
-            # BUG: if assign to table itself will cause error
-            if try_drop_table_before_creating:
-                # https://duckdb.org/docs/sql/statements/drop.html
-                try:
-                    duckdb.execute(
-                        f"DROP TABLE IF EXISTS {new_table_name};",
-                        connection=duckdb_connect,
-                    )
-                except duckdb.CatalogException as e:
-                    duckdb.execute(
-                        f"DROP VIEW IF EXISTS {new_table_name};",
-                        connection=duckdb_connect,
-                    )
         else:
             new_table_name = (
                 None if not keep_latest_statement_as_last_table else TEMP_TABLE_NAME
