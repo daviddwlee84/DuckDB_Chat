@@ -5,10 +5,12 @@ from dotenv import load_dotenv
 import glob
 import os
 import pandas as pd
+
+# BUG: PydanticUserError: Please use `typing_extensions.TypedDict` instead of `typing.TypedDict` on Python < 3.12. For further information visit https://errors.pydantic.dev/2.5/u/typed-dict-version
+# https://github.com/gventuri/pandas-ai/issues/762
+# https://github.com/pydantic/pydantic/issues/6645
 from pandasai import SmartDataframe, Agent, SmartDatalake
 from pandasai.llm import OpenAI, AzureOpenAI
-
-llm = OpenAI(api_token="YOUR_API_TOKEN")
 
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -91,6 +93,10 @@ elif openai_selection == "Azure OpenAI":
         deployment_name=st.session_state.azure_openai_deployment_name,
         is_chat_model=True,
     )
+
+else:
+    st.error(f'Invalid openai_selection {openai_selection}.')
+    st.stop()
 
 if "dbqa_pandasai_uploaded_file" not in st.session_state:
     st.session_state.dbqa_pandasai_uploaded_file = None
