@@ -27,7 +27,7 @@ streamlit run app.py
 
 - [X] Add [demo of DuckDB with Jupyter Notebook](DuckDB_with_JupyterNotebook)
 - [X] Able to use customized table alias
-  - [ ] Implement with more elegant way
+  - [X] Implement with more elegant way => register table name
 - [ ] Support multiple file loading (same extension and schema)
 - [X] Add row limit for potential large file
   - [X] `<= 0` as no limit
@@ -40,6 +40,7 @@ streamlit run app.py
   - [ ] Plot button (for each DataFrame or at the end) => this will make code very mess
   - [tvst/st-execbox](https://github.com/tvst/st-execbox)
   - [Running Jupyter cells inside streamlit? - 🎈 Using Streamlit - Streamlit](https://discuss.streamlit.io/t/running-jupyter-cells-inside-streamlit/585/3)
+  - [Chart visualization — pandas 2.1.4 documentation](https://pandas.pydata.org/docs/user_guide/visualization.html)
 - [ ] Retrieve file from URL ([DuckDB — Python documentation](https://jupysql.ploomber.io/en/latest/integrations/duckdb.html#id1))
 - [X] Maybe user can ignore "FROM" clause, which by default indicate ~~latest generated table~~ original file
   - [ ] Think of option between latest generated table or the original file
@@ -62,7 +63,7 @@ streamlit run app.py
   - [ ] Streaming user experience
   - [ ] Making agent that can generate DuckDB SQL query
   - [ ] Making agent that can summary table
-- [ ] See how to change the main page name (i.e. app) without re-deploy Streamlit app
+- [ ] See how to change the main page name (i.e. app) ~~without re-deploy Streamlit app~~ => Currently, not possible
 - [X] Manage OpenAI keys in global settings
   - [ ] Maybe move duplicate code block into one place => refactor
   - [X] Somehow failed to load from `.env` when disabling `"key"` in `st.text_input`
@@ -72,6 +73,7 @@ streamlit run app.py
   - [Get path from file_uploader() - 🎈 Using Streamlit - Streamlit](https://discuss.streamlit.io/t/get-path-from-file-uploader/3771/16)
     - [tempfile — Generate temporary files and directories — Python 3.12.0 documentation](https://docs.python.org/3/library/tempfile.html)
 - [ ] Support more file type (e.g. Excel, ...)
+- [ ] Pipe (`|`) in SQL => multiple SQL description, and apply one after the other.
 - More Demo
   - [ ] NL to SQL
   - [ ] DBQA

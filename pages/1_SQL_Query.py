@@ -4,12 +4,14 @@ import time
 import pandas as pd
 import re
 
+# import matplotlib.pyplot as plt
+
 # create_table_name_re = re.compile(r"(?i)create\s+table\s+(\w+)\s+as")
 # Also support view
 create_table_name_re = re.compile(
     r"(?i)create\s+(?:or\s+replace\s+)?(?:view|table)\s+(?P<table_name>\w+)\s+as"
 )
-create_table_alias_re = re.compile(r"(?i)(\w+)\s*=\s*(.*)")
+create_table_alias_re = re.compile(r"(?i)^(\w+)\s*=\s*(.*)")
 
 TEMP_TABLE_NAME = "_temp"
 
@@ -532,6 +534,7 @@ with st.sidebar:
         st.markdown("Available columns:\n")
         st.write(temp_df.columns)
 
+# https://pandas.pydata.org/docs/user_guide/visualization.html
 # TODO: support simple plot options for each dataframe
 #     if show_plot_button:
 #         st.session_state.latest_result_df = result_df
