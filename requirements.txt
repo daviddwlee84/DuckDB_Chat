@@ -38,3 +38,6 @@ pandasai
 
 # Excel
 openpyxl
+
+# ----- Chainlit -----
+chainlit

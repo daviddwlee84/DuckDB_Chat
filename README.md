@@ -19,8 +19,18 @@ cp example.env .env
 # ...
 ```
 
+### Streamlit
+
 ```bash
 streamlit run app.py
+```
+
+https://raw.githubusercontent.com/daviddwlee84/DuckDB_Chat/main/demo/demo.csv
+
+### Chainlit
+
+```bash
+chainlit run chainlit_app.py
 ```
 
 ## Todo
@@ -29,6 +39,7 @@ streamlit run app.py
 - [X] Able to use customized table alias
   - [X] Implement with more elegant way => register table name
 - [ ] Support multiple file loading (same extension and schema)
+- [ ] Able to use DuckDB [extensions](https://duckdb.org/docs/api/python/overview#loading-and-installing-extensions) - [Extensions - DuckDB](https://duckdb.org/docs/extensions/overview)
 - [X] Add row limit for potential large file
   - [X] `<= 0` as no limit
   - [X] Add `df.head()` at initial state
@@ -74,6 +85,9 @@ streamlit run app.py
     - [tempfile — Generate temporary files and directories — Python 3.12.0 documentation](https://docs.python.org/3/library/tempfile.html)
 - [ ] Support more file type (e.g. Excel, ...)
 - [ ] Pipe (`|`) in SQL => multiple SQL description, and apply one after the other.
+- [ ] Support PRQL
+  - [ywelsch/duckdb-prql: PRQL as a DuckDB extension](https://github.com/ywelsch/duckdb-prql)
+  - [PRQL](https://prql-lang.org/) [PRQL/prql: PRQL is a modern language for transforming data — a simple, powerful, pipelined SQL replacement](https://github.com/PRQL/prql)
 - More Demo
   - [ ] NL to SQL
   - [ ] DBQA
@@ -94,6 +108,9 @@ streamlit run app.py
       - [ ] Count Token: [Large language models (LLMs) - PandasAI](https://docs.pandas-ai.com/en/latest/LLMs/llms/)
       - [ ] Multiple files: SmartDatalake
       - [ ] Agent: Clarification questions
+- [ ] Try moving from Streamlit to [Chainlit](https://chainlit.io/)
+  - [Overview - Chainlit](https://docs.chainlit.io/get-started/overview)
+  - [Chainlit/chainlit: Build Python LLM apps in minutes ⚡️](https://github.com/Chainlit/chainlit)
 
 ## Resources
 
@@ -144,3 +161,11 @@ LangChain x Streamlit
 - [CSV | 🦜️🔗 Langchain](https://python.langchain.com/docs/integrations/toolkits/csv)
 - [sugarforever/LangChain-SQL-Chain](https://github.com/sugarforever/LangChain-SQL-Chain)
 - [**LLMs and SQL**](https://blog.langchain.dev/llms-and-sql/)
+
+### Database / SQL
+
+- [What is the process of databases parsing SQL? - Quora](https://www.quora.com/What-is-the-process-of-databases-parsing-SQL)
+
+### Chainlit
+
+- [AskFileMessage - Chainlit](https://docs.chainlit.io/api-reference/ask/ask-for-file)
