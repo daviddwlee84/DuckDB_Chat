@@ -108,9 +108,16 @@ chainlit run chainlit_app.py
       - [ ] Count Token: [Large language models (LLMs) - PandasAI](https://docs.pandas-ai.com/en/latest/LLMs/llms/)
       - [ ] Multiple files: SmartDatalake
       - [ ] Agent: Clarification questions
-- [ ] Try moving from Streamlit to [Chainlit](https://chainlit.io/)
+
+Chainlit
+
+- [X] Try [Chainlit](https://chainlit.io/)
   - [Overview - Chainlit](https://docs.chainlit.io/get-started/overview)
   - [Chainlit/chainlit: Build Python LLM apps in minutes ⚡️](https://github.com/Chainlit/chainlit)
+- [ ] Format user message as SQL code
+- [ ] Support more file types (e.g. parquet)
+- [ ] New table as attachment
+- [ ] Manually set default table name
 
 ## Resources
 
@@ -169,3 +176,4 @@ LangChain x Streamlit
 ### Chainlit
 
 - [AskFileMessage - Chainlit](https://docs.chainlit.io/api-reference/ask/ask-for-file)
+- [Text to SQL - Chainlit](https://docs.chainlit.io/examples/openai-sql)
