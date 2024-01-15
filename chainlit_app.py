@@ -18,19 +18,31 @@ async def upload_new_table(
     file_path: str,
     simplified_file_name: str = None,
     table_name: str = DEFAULT_TABLE_NAME,
+    extension: str = None,
 ):
     global_table_df: Dict[str, pd.DataFrame] = cl.user_session.get("global_table_df")
     # TODO: add more file type support
     # TODO: add multi-file suport
-    with open(file_path, "r", encoding="utf-8") as fp:
-        global_table_df[table_name] = pd.read_csv(fp)
+    if not extension:
+        if simplified_file_name:
+            extension = simplified_file_name.rsplit(".", 1)[-1]
+        else:
+            extension = file_path.rsplit('.', 1)[-1]
+    if extension == "csv":
+        with open(file_path, "r", encoding="utf-8") as fp:
+            global_table_df[table_name] = pd.read_csv(fp)
+    elif extension == "parquet":
+        with open(file_path, "rb") as fp:
+            global_table_df[table_name] = pd.read_parquet(fp)
+    else:
+        raise NotImplementedError(f"Unknown extension {extension}")
 
     if not simplified_file_name:
         simplified_file_name = os.path.basename(file_path)
 
     # Let the user know that the system is ready
     await cl.Message(
-        content=f"`{simplified_file_name}` uploaded as table {table_name}, it contains {len(global_table_df[table_name])} rows!"
+        content=f"`{simplified_file_name}` uploaded as table `{table_name}`, it contains {len(global_table_df[table_name])} rows!"
     ).send()
 
     # TODO: merge them into single markdown message
@@ -96,20 +108,25 @@ async def start():
     ).send()
     await update_settings(settings)
 
-    files = None
+    # files = None
+    #
+    # # Wait for the user to upload a file
+    # while files == None:
+    #     # https://docs.chainlit.io/api-reference/ask/ask-for-file
+    #     files = await cl.AskFileMessage(
+    #         content="Please upload a csv file to begin!",
+    #         accept={"text/plain": [".csv"]},
+    #         max_size_mb=200,
+    #     ).send()
+    #
+    # text_file = files[0]
+    #
+    # await upload_new_table(text_file.path, text_file.name, DEFAULT_TABLE_NAME)
 
-    # Wait for the user to upload a file
-    while files == None:
-        # https://docs.chainlit.io/api-reference/ask/ask-for-file
-        files = await cl.AskFileMessage(
-            content="Please upload a csv file to begin!",
-            accept={"text/plain": [".csv"]},
-            max_size_mb=200,
-        ).send()
-
-    text_file = files[0]
-
-    await upload_new_table(text_file.path, text_file.name, DEFAULT_TABLE_NAME)
+    # TODO:
+    await cl.Message(
+        "Add a csv/parquet file as attachment with a table name to begin!"
+    ).send()
 
 
 @cl.on_settings_update
