@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 import chainlit as cl
 import pandas as pd
 import duckdb
@@ -8,7 +8,6 @@ import os
 
 
 # TODO: make this user session
-global_df: Optional[pd.DataFrame] = None
 do_query_rewrite: bool = False
 show_time: bool = True
 
@@ -20,26 +19,30 @@ async def upload_new_table(
     simplified_file_name: str = None,
     table_name: str = DEFAULT_TABLE_NAME,
 ):
-    global global_df
+    global_table_df: Dict[str, pd.DataFrame] = cl.user_session.get("global_table_df")
     # TODO: add more file type support
     # TODO: add multi-file suport
     with open(file_path, "r", encoding="utf-8") as fp:
-        global_df = pd.read_csv(fp)
+        global_table_df[table_name] = pd.read_csv(fp)
 
     if not simplified_file_name:
         simplified_file_name = os.path.basename(file_path)
 
     # Let the user know that the system is ready
     await cl.Message(
-        content=f"`{simplified_file_name}` uploaded as table {table_name}, it contains {len(global_df)} rows!"
+        content=f"`{simplified_file_name}` uploaded as table {table_name}, it contains {len(global_table_df[table_name])} rows!"
     ).send()
 
     # TODO: merge them into single markdown message
     await cl.Message(content="Table Preview (first 10 rows):").send()
-    await cl.Message(content=global_df.head(10).to_markdown(index=True)).send()
+    await cl.Message(
+        content=global_table_df[table_name].head(10).to_markdown(index=True)
+    ).send()
 
     duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
-    duckdb_connect.register(table_name, global_df)
+    # https://duckdb.org/docs/api/python/data_ingestion
+    # https://duckdb.org/docs/api/python/overview.html
+    duckdb_connect.register(table_name, global_table_df[table_name])
     query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
     query_rewriter.add_new_table(table_name)
 
@@ -49,6 +52,10 @@ async def start():
     cl.user_session.set(
         "duckdb_connect",
         duckdb.connect(":memory:", config={"allow_unsigned_extensions": "true"}),
+    )
+    cl.user_session.set(
+        "global_table_df",
+        {},
     )
 
     # https://docs.chainlit.io/advanced-features/chat-settings
