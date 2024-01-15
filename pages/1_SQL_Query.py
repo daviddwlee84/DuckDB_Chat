@@ -3,15 +3,10 @@ import duckdb
 import time
 import pandas as pd
 import re
+from utils import QueryRewriterForDuckDB
 
 # import matplotlib.pyplot as plt
 
-# create_table_name_re = re.compile(r"(?i)create\s+table\s+(\w+)\s+as")
-# Also support view
-create_table_name_re = re.compile(
-    r"(?i)create\s+(?:or\s+replace\s+)?(?:view|table)\s+(?P<table_name>\w+)\s+as"
-)
-create_table_alias_re = re.compile(r"(?i)^(\w+)\s*=\s*(.*)")
 
 TEMP_TABLE_NAME = "_temp"
 
@@ -98,22 +93,22 @@ You can [casting](https://duckdb.org/docs/sql/expressions/cast) Timestamp to Tim
   - [DuckDB Environment](https://duckdb.org/docs/guides/meta/duckdb_environment)
     - `SELECT version();`
     - `PRAGMA version;`
-    - `SELECT * FROM duckdb_columns()`: columns
-    - `SELECT * FROM duckdb_constraints()`: constraints
-    - `SELECT * FROM duckdb_databases()`: lists the databases that are accessible from within the current DuckDB process
-    - `SELECT * FROM duckdb_dependencies()`: dependencies between objects
-    - `SELECT * FROM duckdb_extensions()`: extensions
-    - `SELECT * FROM duckdb_functions()`: functions
-    - `SELECT * FROM duckdb_indexes()`: secondary indexes
-    - `SELECT * FROM duckdb_keywords()`: DuckDB’s keywords and reserved words
-    - `SELECT * FROM duckdb_optimizers()`: the available optimization rules in the DuckDB instance
-    - `SELECT * FROM duckdb_schemas()`: schemas
-    - `SELECT * FROM duckdb_sequences()`: sequences
-    - `SELECT * FROM duckdb_settings()`: settings
-    - `SELECT * FROM duckdb_tables()`: base tables
-    - `SELECT * FROM duckdb_types()`: data types
-    - `SELECT * FROM duckdb_views()`: views
-    - `SELECT * FROM duckdb_temporary_files()`: the temporary files DuckDB has written to disk, to offload data from memory
+    - `FROM duckdb_columns()`: columns
+    - `FROM duckdb_constraints()`: constraints
+    - `FROM duckdb_databases()`: lists the databases that are accessible from within the current DuckDB process
+    - `FROM duckdb_dependencies()`: dependencies between objects
+    - [`FROM duckdb_extensions()`](https://duckdb.org/docs/extensions/overview#listing-extensions): extensions
+    - `FROM duckdb_functions()`: functions
+    - `FROM duckdb_indexes()`: secondary indexes
+    - `FROM duckdb_keywords()`: DuckDB’s keywords and reserved words
+    - `FROM duckdb_optimizers()`: the available optimization rules in the DuckDB instance
+    - `FROM duckdb_schemas()`: schemas
+    - `FROM duckdb_sequences()`: sequences
+    - `FROM duckdb_settings()`: settings
+    - `FROM duckdb_tables()`: base tables
+    - `FROM duckdb_types()`: data types
+    - `FROM duckdb_views()`: views
+    - `FROM duckdb_temporary_files()`: the temporary files DuckDB has written to disk, to offload data from memory
 """
     )
 
@@ -140,12 +135,22 @@ if "messages" not in st.session_state:
 if "uploaded_file" not in st.session_state:
     st.session_state.uploaded_file = None
     st.session_state.data = None
-    st.session_state.duckdb_connect = duckdb.connect()
+    st.session_state.duckdb_connect = duckdb.connect(
+        config={"allow_unsigned_extensions": "true"}
+    )
+    st.session_state.duckdb_connect.install_extension("httpfs")
+    st.session_state.duckdb_connect.load_extension("httpfs")
+    # st.session_state.duckdb_connect.execute("SET custom_extension_repository='http://welsch.lu/duckdb/prql/latest';")
+    # BUG: duckdb.IOException: IO Error: Failed to download extension "prql" at URL "http://welsch.lu/duckdb/prql/latest/v0.8.1/windows_amd64/prql.duckdb_extension.gz Candidate extensions: "parquet", "sqlite", "sqlite3", "sqlite_scanner" (ERROR Read)
+    # st.session_state.duckdb_connect.execute("FORCE INSTALL prql;")
+    # st.session_state.duckdb_connect.execute("LOAD prql;")
     st.session_state.latest_table = None
     st.session_state.current_active_tables = set()
 
 
 duckdb_connect = st.session_state.duckdb_connect.cursor()
+# duckdb_connect.load_extension("httpfs")
+# duckdb_connect.execute("LOAD prql;")
 
 # TODO: Support multiple file
 # If upload multiple file, they must have same extension and schema.
@@ -318,6 +323,9 @@ if st.session_state.data is not None:
     except duckdb.CatalogException as e:
         print(e)
 
+query_rewriter = QueryRewriterForDuckDB(use_view_over_table, auto_from_table)
+query_rewriter.current_active_tables = st.session_state.current_active_tables
+
 # duckdb.alias
 # Not working
 # https://stackoverflow.com/questions/5036700/how-can-you-dynamically-create-variables
@@ -382,66 +390,9 @@ if prompt := st.chat_input(
         message_placeholder = st.empty()
 
         if not prompt.endswith(";"):
-            if create_table_alias := create_table_alias_re.search(prompt):
-                # https://duckdb.org/docs/sql/statements/create_table.html
-                latest_table_name = create_table_alias.group(1)
-                expression = create_table_alias.group(2)
-                # NOTE: use OR REPLACE can support same table name override
-                if use_view_over_table:
-                    # https://duckdb.org/docs/sql/statements/create_view.html
-                    prompt = (
-                        f"CREATE OR REPLACE VIEW {latest_table_name} AS {expression}"
-                    )
-                else:
-                    prompt = (
-                        f"CREATE OR REPLACE TABLE {latest_table_name} AS {expression}"
-                    )
+            prompt = query_rewriter.rewrite(prompt, st.session_state.latest_table_name)
 
-            if auto_from_table and "FROM" not in prompt.upper():
-                if "SELECT" in prompt:
-                    prompt = prompt.replace(
-                        "SELECT", f"FROM {st.session_state.latest_table} SELECT"
-                    )
-                elif "select" in prompt:
-                    prompt = prompt.replace(
-                        "select", f"FROM {st.session_state.latest_table} SELECT"
-                    )
-
-            if "SELECT" not in prompt.upper():
-                if prompt.strip() in st.session_state.current_active_tables:
-                    # prompt is table name
-                    # If only table name (without SELECT and FROM), then by default just output the table
-                    prompt = f"FROM {prompt.strip()} SELECT *;"
-                else:
-                    # https://duckdb.org/docs/sql/functions/char.html
-                    # https://duckdb.org/docs/sql/functions/patternmatching.html
-                    # Special case, prompt is a quick test
-                    prompt = f"SELECT {prompt};"
-
-        if is_creating_table := create_table_name_re.search(prompt):
-            new_table_name = is_creating_table.group("table_name")
-        else:
-            new_table_name = (
-                None if not keep_latest_statement_as_last_table else TEMP_TABLE_NAME
-            )
-
-        # TODO: if use aggregate function but without GROUP BY, automatically inference columns
-        # BinderException: Binder Error: column "symbol" must appear in the GROUP BY clause or must be part of an aggregate function.
-        # Either add it to the GROUP BY list, or use "ANY_VALUE(symbol)" if the exact value of "symbol" is not important.
-
-        # TODO: not sure if this part make sense. Ideally, user should be aware of what they are doing.
-        # (operation can cancel when it took too much time)
-        if row_limit > 0:
-            if prompt.endswith(";"):
-                prompt = prompt.replace(";", f" LIMIT {row_limit};")
-            elif "LIMIT" in prompt:
-                st.toast("User has override row limit.")
-            else:
-                prompt += f" LIMIT {row_limit};"
-
-        if not prompt.endswith(";"):
-            # This is not necessary but will make description seems complete
-            prompt += ";"
+        new_table_name = query_rewriter.creating_table(prompt)
 
         st.session_state.messages.append(
             {"role": "user", "content": (old_prompt, prompt), "time_usage": None}
