@@ -39,5 +39,10 @@ pandasai
 # Excel
 openpyxl
 
+# Auto complete test
+streamlit-searchbox
+# fast-autocomplete[pylev]
+fast-autocomplete[levenshtein]
+
 # ----- Chainlit -----
 chainlit
