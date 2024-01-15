@@ -1,4 +1,4 @@
-from typing import Set, Optional
+from typing import Any, Set, Optional
 import re
 
 
@@ -19,6 +19,7 @@ class QueryRewriterForDuckDB:
         keep_latest_statement_as_last_table: bool = False,
         # row_limit: int = 0,
         default_temp_table_name: str = "_temp",
+        always_rewrite: bool = False,
     ) -> None:
         """
         row_limit is for super large data, you want to force every query as preview (deprecated now)
@@ -30,6 +31,7 @@ class QueryRewriterForDuckDB:
         self.auto_from_table = auto_from_table
         self.keep_latest_statement_as_last_table = keep_latest_statement_as_last_table
         self.default_temp_table_name = default_temp_table_name
+        self.always_rewrite = always_rewrite
 
     def add_new_table(self, table_name: str) -> bool:
         """
@@ -86,9 +88,9 @@ class QueryRewriterForDuckDB:
         #     else:
         #         prompt += f" LIMIT {self.row_limit};"
 
-        if not prompt.endswith(";"):
+        if not query.endswith(";"):
             # This is not necessary but will make description seems complete
-            prompt += ";"
+            query += ";"
 
         return query
 
@@ -102,3 +104,11 @@ class QueryRewriterForDuckDB:
                 else self.default_temp_table_name
             )
         return new_table_name
+
+    def __call__(self, query: str) -> str:
+        if not query.endswith(";") or self.always_rewrite:
+            query = self.rewrite(query)
+        new_table_name = self.creating_table(query)
+        if new_table_name:
+            self.add_new_table(new_table_name)
+        return query

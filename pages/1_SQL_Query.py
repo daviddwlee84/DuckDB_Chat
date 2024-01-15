@@ -323,7 +323,7 @@ if st.session_state.data is not None:
     except duckdb.CatalogException as e:
         print(e)
 
-query_rewriter = QueryRewriterForDuckDB(use_view_over_table, auto_from_table)
+query_rewriter = QueryRewriterForDuckDB(use_view_over_table=use_view_over_table, auto_from_table=auto_from_table)
 query_rewriter.current_active_tables = st.session_state.current_active_tables
 
 # duckdb.alias
