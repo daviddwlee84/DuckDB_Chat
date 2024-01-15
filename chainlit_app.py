@@ -4,6 +4,7 @@ import pandas as pd
 import duckdb
 import time
 from utils import QueryRewriterForDuckDB
+import os
 
 
 # TODO: make this user session
@@ -14,6 +15,35 @@ show_time: bool = True
 DEFAULT_TABLE_NAME = "tbl"
 
 
+async def upload_new_table(
+    file_path: str,
+    simplified_file_name: str = None,
+    table_name: str = DEFAULT_TABLE_NAME,
+):
+    global global_df
+    # TODO: add more file type support
+    # TODO: add multi-file suport
+    with open(file_path, "r", encoding="utf-8") as fp:
+        global_df = pd.read_csv(fp)
+
+    if not simplified_file_name:
+        simplified_file_name = os.path.basename(file_path)
+
+    # Let the user know that the system is ready
+    await cl.Message(
+        content=f"`{simplified_file_name}` uploaded as table {table_name}, it contains {len(global_df)} rows!"
+    ).send()
+
+    # TODO: merge them into single markdown message
+    await cl.Message(content="Table Preview (first 10 rows):").send()
+    await cl.Message(content=global_df.head(10).to_markdown(index=True)).send()
+
+    duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
+    duckdb_connect.register(table_name, global_df)
+    query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
+    query_rewriter.add_new_table(table_name)
+
+
 @cl.on_chat_start
 async def start():
     cl.user_session.set(
@@ -21,8 +51,8 @@ async def start():
         duckdb.connect(":memory:", config={"allow_unsigned_extensions": "true"}),
     )
 
-    global global_df
-
+    # https://docs.chainlit.io/advanced-features/chat-settings
+    # https://github.com/Chainlit/cookbook/blob/main/image-gen/app.py
     settings = await cl.ChatSettings(
         [
             cl.input_widget.Switch(
@@ -72,24 +102,7 @@ async def start():
 
     text_file = files[0]
 
-    # TODO: add more file type support
-    # TODO: add multi-file suport
-    with open(text_file.path, "r", encoding="utf-8") as fp:
-        global_df = pd.read_csv(fp)
-
-    # Let the user know that the system is ready
-    await cl.Message(
-        content=f"`{text_file.name}` uploaded, it contains {len(global_df)} rows!"
-    ).send()
-
-    # TODO: merge them into single markdown message
-    await cl.Message(content="Table Preview (first 10 rows):").send()
-    await cl.Message(content=global_df.head(10).to_markdown(index=True)).send()
-
-    duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
-    duckdb_connect.register(DEFAULT_TABLE_NAME, global_df)
-    query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
-    query_rewriter.add_new_table(DEFAULT_TABLE_NAME)
+    await upload_new_table(text_file.path, text_file.name, DEFAULT_TABLE_NAME)
 
 
 @cl.on_settings_update
@@ -126,10 +139,8 @@ async def update_settings(settings: dict):
 @cl.step(name="Query DuckDB")
 async def query_duckdb(sql_query: str) -> str:
     duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
-    try:
-        return duckdb_connect.execute(sql_query).df().to_markdown(index=True)
-    except Exception as e:
-        return str(e)
+    # Chainlit can handle Error and print
+    return duckdb_connect.execute(sql_query).df().to_markdown(index=True)
 
 
 @cl.step(name="Query Rewrite", language="sql")
@@ -139,8 +150,19 @@ async def query_rewrite(query: str) -> str:
 
 
 @cl.on_message
-async def main(message: cl.Message):
+async def main(message: cl.Message) -> None:
     query = message.content
+    if message.elements:
+        print(message.elements)
+        if len(query.strip().split()) != 1:
+            # TODO: prevent from something like 123data
+            raise ValueError("Table name should be single string.")
+        if len(message.elements) > 1:
+            raise ValueError("Too many file uploaded. Currently only support 1.")
+        file = message.elements[0]
+        await upload_new_table(file.path, file.name, query)
+        return
+
     start = time.perf_counter()
     # Call the tool
     global do_query_rewrite
@@ -149,9 +171,24 @@ async def main(message: cl.Message):
     result = await query_duckdb(query)
     time_usage = time.perf_counter() - start
 
+    actions = [
+        cl.Action(name="Plot", value=query),
+        # cl.Action(name="Statistics", value=query, df=result),
+    ]
+
     # TODO: merge them into single markdown message
     # Send the final answer.
-    await cl.Message(content=result).send()
+    await cl.Message(content=result, actions=actions).send()
     global show_time
     if show_time:
         await cl.Message(content=f"Time usage: {time_usage:.2f} seconds.").send()
+
+
+@cl.action_callback("Plot")
+async def plot(action: cl.Action) -> None:
+    await cl.Message(f"TBD: plotting {action.value}").send()
+
+
+# @cl.action_callback("Statistics")
+# async def statistics(action: cl.Action) -> None:
+#     await cl.Message(action.df.to_markdown(index=True)).send()
