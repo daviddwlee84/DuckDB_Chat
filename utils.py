@@ -17,7 +17,7 @@ class QueryRewriterForDuckDB:
         use_view_over_table: bool = False,
         auto_from_table: bool = True,
         keep_latest_statement_as_last_table: bool = False,
-        # row_limit: int = 0,
+        row_limit: int = 0,
         default_temp_table_name: str = "_temp",
         always_rewrite: bool = False,
     ) -> None:
@@ -30,6 +30,7 @@ class QueryRewriterForDuckDB:
         self.use_view_over_table = use_view_over_table
         self.auto_from_table = auto_from_table
         self.keep_latest_statement_as_last_table = keep_latest_statement_as_last_table
+        self.row_limit = row_limit
         self.default_temp_table_name = default_temp_table_name
         self.always_rewrite = always_rewrite
 
@@ -82,11 +83,11 @@ class QueryRewriterForDuckDB:
 
         # TODO: not sure if this part make sense. Ideally, user should be aware of what they are doing.
         # (operation can cancel when it took too much time)
-        # if self.row_limit > 0:
-        #     if prompt.endswith(";"):
-        #         prompt = prompt.replace(";", f" LIMIT {self.row_limit};")
-        #     else:
-        #         prompt += f" LIMIT {self.row_limit};"
+        if self.row_limit > 0:
+            if query.endswith(";"):
+                query = query.replace(";", f" LIMIT {self.row_limit};")
+            else:
+                query += f" LIMIT {self.row_limit};"
 
         if not query.endswith(";"):
             # This is not necessary but will make description seems complete

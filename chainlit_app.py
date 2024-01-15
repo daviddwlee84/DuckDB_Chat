@@ -6,57 +6,58 @@ import time
 from utils import QueryRewriterForDuckDB
 
 
-duckdb_connect = duckdb.connect(
-    ":memory:", config={"allow_unsigned_extensions": "true"}
-)
-# duckdb_connect.install_extension("httpfs")
-# duckdb_connect.load_extension("httpfs")
-
+# TODO: make this user session
 global_df: Optional[pd.DataFrame] = None
-global_settings: dict = {}
-query_rewriter = QueryRewriterForDuckDB(use_view_over_table=False, auto_from_table=True)
-
+do_query_rewrite: bool = False
+show_time: bool = True
 
 DEFAULT_TABLE_NAME = "tbl"
 
 
 @cl.on_chat_start
 async def start():
+    cl.user_session.set(
+        "duckdb_connect",
+        duckdb.connect(":memory:", config={"allow_unsigned_extensions": "true"}),
+    )
+
     global global_df
-    global duckdb_connect
-    global global_settings
-    global query_rewriter
 
     settings = await cl.ChatSettings(
         [
-            cl.input_widget.Select(
+            cl.input_widget.Switch(
                 id="ShowIndex",
                 label="Show Index",
-                values=["Yes", "No"],
-                initial_index=0,
+                initial=True,
+                description="Show table index.",
             ),
-            cl.input_widget.Select(
+            cl.input_widget.Switch(
                 id="ShowTime",
                 label="Show Time",
-                values=["Yes", "No"],
-                initial_index=0,
+                initial=True,
+                description="Show execution time.",
             ),
-            cl.input_widget.Select(
+            cl.input_widget.Switch(
                 id="QueryRewrite",
                 label="Query Rewrite",
-                values=["Yes", "No"],
-                initial_index=0,
+                initial=True,
+                description="Rewrite query.",
             ),
-            cl.input_widget.Select(
+            cl.input_widget.Switch(
                 id="QueryAutoFrom",
                 label="Auto FROM Table",
-                values=["Yes", "No"],
-                initial_index=0,
+                initial=True,
+                description="Automatically add FROM table if not given.",
+            ),
+            cl.input_widget.NumberInput(
+                id="RowNumberLimit",
+                label="Row Number Limit",
+                initial=0,
+                description="If > 0, will only return specific number rows.",
             ),
         ]
     ).send()
-    global_settings.update(settings)
-    query_rewriter.auto_from_table = settings.get("QueryAutoFrom") == "Yes"
+    await update_settings(settings)
 
     files = None
 
@@ -85,8 +86,35 @@ async def start():
     await cl.Message(content="Table Preview (first 10 rows):").send()
     await cl.Message(content=global_df.head(10).to_markdown(index=True)).send()
 
+    duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
     duckdb_connect.register(DEFAULT_TABLE_NAME, global_df)
+    query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
     query_rewriter.add_new_table(DEFAULT_TABLE_NAME)
+
+
+@cl.on_settings_update
+async def update_settings(settings: dict):
+    """
+    Setup query rewriter
+    Update global settings
+    """
+    if cl.user_session.get("query_rewriter") is None:
+        cl.user_session.set(
+            "query_rewriter",
+            QueryRewriterForDuckDB(
+                use_view_over_table=False,
+                auto_from_table=settings.get("QueryAutoFrom"),
+                row_limit=settings.get("RowNumberLimit", 0),
+            ),
+        )
+    else:
+        query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
+        query_rewriter.auto_from_table = settings.get("QueryAutoFrom")
+        query_rewriter.row_limit = settings.get("RowNumberLimit", 0)
+
+    global do_query_rewrite, show_time
+    do_query_rewrite = settings.get("QueryRewrite")
+    show_time = settings.get("ShowTime")
 
 
 # @cl.on_chat_end
@@ -97,7 +125,7 @@ async def start():
 
 @cl.step(name="Query DuckDB")
 async def query_duckdb(sql_query: str) -> str:
-    global duckdb_connect
+    duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
     try:
         return duckdb_connect.execute(sql_query).df().to_markdown(index=True)
     except Exception as e:
@@ -106,17 +134,17 @@ async def query_duckdb(sql_query: str) -> str:
 
 @cl.step(name="Query Rewrite", language="sql")
 async def query_rewrite(query: str) -> str:
-    global query_rewriter
+    query_rewriter: QueryRewriterForDuckDB = cl.user_session.get("query_rewriter")
     return query_rewriter(query)
 
 
 @cl.on_message
 async def main(message: cl.Message):
-    global global_settings
     query = message.content
     start = time.perf_counter()
     # Call the tool
-    if global_settings.get("QueryAutoFrom") == "Yes":
+    global do_query_rewrite
+    if do_query_rewrite:
         query = await query_rewrite(query)
     result = await query_duckdb(query)
     time_usage = time.perf_counter() - start
@@ -124,5 +152,6 @@ async def main(message: cl.Message):
     # TODO: merge them into single markdown message
     # Send the final answer.
     await cl.Message(content=result).send()
-    if global_settings.get("ShowTime") == "Yes":
+    global show_time
+    if show_time:
         await cl.Message(content=f"Time usage: {time_usage:.2f} seconds.").send()
