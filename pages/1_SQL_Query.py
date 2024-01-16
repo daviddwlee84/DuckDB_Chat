@@ -390,7 +390,7 @@ if prompt := st.chat_input(
         message_placeholder = st.empty()
 
         if not prompt.endswith(";"):
-            prompt = query_rewriter.rewrite(prompt, st.session_state.latest_table_name)
+            prompt = query_rewriter.rewrite(prompt, st.session_state.latest_table)
 
         new_table_name = query_rewriter.creating_table(prompt)
 
