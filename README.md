@@ -30,7 +30,8 @@ https://raw.githubusercontent.com/daviddwlee84/DuckDB_Chat/main/demo/demo.csv
 ### Chainlit
 
 ```bash
-chainlit run chainlit_app.py
+chainlit run --watch chainlit_app.py
+chainlit run --watch chainlit_app_pandasai.py
 ```
 
 ## Todo

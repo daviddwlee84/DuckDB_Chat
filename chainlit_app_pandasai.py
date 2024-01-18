@@ -39,12 +39,12 @@ async def _load_df_file(
     return pandasai.SmartDataframe(df, path.stem, description)
 
 
-async def _process_file_elements(elements: List[ElementBased]):
-    global_table_df: Dict[str, pd.DataFrame] = cl.user_session.get(
-        "global_table_df", {}
+def _update_pandas_df_from_global_table_dfs():
+    global_table_dfs: Dict[str, pd.DataFrame] = cl.user_session.get(
+        "global_table_dfs", {}
     )
-    for element in elements:
-        global_table_df[element.name] = await _load_df_file(element.path, element.name)
+    if not global_table_dfs:
+        return False
 
     config = {
         "llm": cl.user_session.get("llm"),
@@ -54,17 +54,28 @@ async def _process_file_elements(elements: List[ElementBased]):
         "open_charts": False,
         "enable_cache": True,
     }
-
-    if global_table_df:
-        print(global_table_df.values())
-        if cl.user_session.get("is_multi_turn"):
-            pandasai_df = ModifiedAgent(global_table_df.values(), config=config)
-        else:
-            pandasai_df = ModifiedSmartDatalake(global_table_df.values(), config=config)
-
-        cl.user_session.set("pandasai_df", pandasai_df)
+    if cl.user_session.get("is_multi_turn"):
+        pandasai_df = ModifiedAgent(
+            global_table_dfs.values(), config=config, memory=cl.user_session.get("Memory", ModifiedMemory(10)))
     else:
+        pandasai_df = ModifiedSmartDatalake(global_table_dfs.values(), config=config)
+    cl.user_session.set("pandasai_df", pandasai_df)
+
+    return pandasai_df
+
+
+async def _process_file_elements(elements: List[ElementBased]):
+    global_table_dfs: Dict[str, pd.DataFrame] = cl.user_session.get(
+        "global_table_dfs", {}
+    )
+    for element in elements:
+        global_table_dfs[element.name] = await _load_df_file(element.path, element.name)
+
+    cl.user_session.set("global_table_dfs", global_table_dfs)
+    if not _update_pandas_df_from_global_table_dfs():
         await cl.Message(content="No valid data.").send()
+    else:
+        await cl.Message(content="New Data Uploaded. Create new Agent.").send()
 
 
 @cl.on_chat_start
@@ -120,8 +131,9 @@ async def start():
     ).send()
     await update_settings(settings)
     await cl.Message(
-        "Add a csv/parquet file as attachment with a table name to begin!"
+        "Add a csv/parquet file as attachment with any dummy message to begin!"
     ).send()
+    cl.user_session.set("Memory", ModifiedMemory(memory_size=0))
 
 
 @cl.on_settings_update
@@ -149,7 +161,23 @@ async def update_settings(settings: dict):
         llm = None
 
     cl.user_session.set("llm", llm)
-    cl.user_session.set("is_multi_turn", settings["chat_mode"] == "Multi Turn")
+    if cl.user_session.get("is_multi_turn") is None:
+        cl.user_session.set("is_multi_turn", settings["chat_mode"] == "Multi Turn")
+    else:
+        if (settings["chat_mode"] == "Multi Turn") == cl.user_session.get(
+            "is_multi_turn"
+        ):
+            return
+        cl.user_session.set("is_multi_turn", settings["chat_mode"] == "Multi Turn")
+
+        if not cl.user_session.get("pandasai_df"):
+            return
+
+        if not _update_pandas_df_from_global_table_dfs():
+            await cl.Message(content="No valid data.").send()
+            return
+
+        await cl.Message(content="Chat mode changed. Create new Agent.").send()
 
 
 def get_latest_image() -> str:
@@ -207,6 +235,8 @@ async def main(message: cl.Message) -> None:
         memory.add(response, is_user=False)
         cl.user_session.set("Memory", memory)
         author = llm.__class__.__name__
+    if cl.user_session.get("is_multi_turn"):
+        author += " (with Memory)"
     time_usage = time.perf_counter() - start
 
     elements = []
@@ -230,8 +260,8 @@ async def main(message: cl.Message) -> None:
     ).send()
 
 
-# @cl.on_chat_end
-# def on_chat_end():
-#     for img_path in cl.user_session.get("temp_images", []):
-#         os.remove(img_path)
-#         print(f"Clean cache image {img_path}")
+@cl.on_logout
+def on_chat_end():
+    for img_path in cl.user_session.get("temp_images", []):
+        os.remove(img_path)
+        print(f"Clean cache image {img_path}")

@@ -38,6 +38,8 @@ class GenerateSmartDatalakePipeline:
                         "is_present_in_cache"
                     )
                 ),
+                # BUG: Pipeline failed on step 4: expected str, bytes or os.PathLike object, not list
+                # result = {'type': 'plot', 'value': ['C:/Users/david/Documents/Program/DuckDB_Chat/static/images/85e74ce1-c737-401b-b8b3-46ad22d34ecb.png', 'C:/Users/david/Documents/Program/DuckDB_Chat/static/images/85e74ce1-c737-401b-b8b3-46ad22d34ecb.png']}
                 CachePopulation(
                     skip_if=lambda pipeline_context: pipeline_context.get_intermediate_value(
                         "is_present_in_cache"
@@ -107,39 +109,6 @@ class ModifiedSmartDatalake(pandasai.SmartDatalake):
         return result
 
 
-class ModifiedAgent(pandasai.Agent):
-    """
-    Use local ModifiedSmartDatalake (GenerateSmartDatalakePipeline)
-    """
-
-    _lake: ModifiedSmartDatalake = None
-    _logger: Optional[Logger] = None
-
-    def __init__(
-        self,
-        dfs: List[DataFrameType],
-        config: Optional[Union[Config, dict]] = None,
-        logger: Optional[Logger] = None,
-        memory_size: int = 10,
-    ):
-        """
-        Args:
-            df (List[DataFrameType]): DataFrame can be Pandas,
-            Polars or Database connectors
-            memory_size (int, optional): Conversation history to use during chat.
-            Defaults to 1.
-        """
-
-        self._lake = ModifiedSmartDatalake(
-            dfs, config, logger, memory=Memory(memory_size)
-        )
-
-        # set instance type in SmartDataLake
-        self._lake.set_instance_type(self.__class__.__name__)
-
-        self._logger = self._lake.logger
-
-
 class ModifiedMemory(Memory):
     def get_openai_messages(self, limit: int = None) -> List[Dict[str, str]]:
         """
@@ -155,3 +124,37 @@ class ModifiedMemory(Memory):
             }
             for message in self._messages[-limit:]
         ]
+
+
+class ModifiedAgent(pandasai.Agent):
+    """
+    Use local ModifiedSmartDatalake (GenerateSmartDatalakePipeline)
+    """
+
+    _lake: ModifiedSmartDatalake = None
+    _logger: Optional[Logger] = None
+
+    def __init__(
+        self,
+        dfs: List[DataFrameType],
+        config: Optional[Union[Config, dict]] = None,
+        logger: Optional[Logger] = None,
+        memory: Optional[ModifiedMemory] = None,
+        memory_size: int = 10,
+    ):
+        """
+        Args:
+            df (List[DataFrameType]): DataFrame can be Pandas,
+            Polars or Database connectors
+            memory_size (int, optional): Conversation history to use during chat.
+            Defaults to 1.
+        """
+        if memory is None:
+            memory = ModifiedMemory(memory_size)
+
+        self._lake = ModifiedSmartDatalake(dfs, config, logger, memory=memory)
+
+        # set instance type in SmartDataLake
+        self._lake.set_instance_type(self.__class__.__name__)
+
+        self._logger = self._lake.logger
