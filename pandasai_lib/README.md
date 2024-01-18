@@ -1,0 +1,2 @@
+Since there is not able to import smart_datalake_chat elements: [pandas-ai/pandasai/pipelines/__init__.py at main · gventuri/pandas-ai](https://github.com/gventuri/pandas-ai/blob/main/pandasai/pipelines/__init__.py)
+We will manually maintain here.
