@@ -12,6 +12,10 @@ import pandasai
 DEFAULT_TABLE_NAME = "tbl"
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 CHARTS_PATH = os.path.join(curr_dir, "static/images/")
+# https://docs.pandas-ai.com/en/latest/custom-whitelisted-dependencies/
+# 1. pip install
+# 2. Add whitelist
+DEPENDENCY_WHITELIST = ["pypinyin", "xpinyin"]
 
 
 async def _load_df_file(
@@ -53,10 +57,14 @@ def _update_pandas_df_from_global_table_dfs():
         "save_charts_path": CHARTS_PATH,
         "open_charts": False,
         "enable_cache": True,
+        "custom_whitelisted_dependencies": DEPENDENCY_WHITELIST,
     }
     if cl.user_session.get("is_multi_turn"):
         pandasai_df = ModifiedAgent(
-            global_table_dfs.values(), config=config, memory=cl.user_session.get("Memory", ModifiedMemory(10)))
+            global_table_dfs.values(),
+            config=config,
+            memory=cl.user_session.get("Memory", ModifiedMemory(10)),
+        )
     else:
         pandasai_df = ModifiedSmartDatalake(global_table_dfs.values(), config=config)
     cl.user_session.set("pandasai_df", pandasai_df)
@@ -249,7 +257,17 @@ async def main(message: cl.Message) -> None:
         # https://docs.chainlit.io/api-reference/elements/image
         elements.append(cl.Image(path=real_path, name=prompt, display="inline"))
 
-    await cl.Message(content=response, author=author, elements=elements).send()
+    if isinstance(response, pd.DataFrame) or isinstance(
+        response, pandasai.SmartDataframe
+    ):
+        if len(response) > 10:
+            await cl.Message(content=f"Since response is too large, we truncate the response and show the top 5 and last 5 results. Original shape {response.shape}").send()
+            response = pd.concat([response.head(5), response.tail(5)])
+        await cl.Message(
+            content=response.to_markdown(), author=author, elements=elements
+        ).send()
+    else:
+        await cl.Message(content=response, author=author, elements=elements).send()
 
     if isinstance(pandasai_df, ModifiedAgent):
         explanation = pandasai_df.explain()

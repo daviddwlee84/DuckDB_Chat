@@ -46,3 +46,6 @@ fast-autocomplete[levenshtein]
 
 # ----- Chainlit -----
 chainlit
+# LLM generated code might need it
+pypinyin
+xpinyin
