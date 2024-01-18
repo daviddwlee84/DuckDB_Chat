@@ -36,6 +36,8 @@ def duckdb_autocomplete(
     https://github.com/duckdb/duckdb/issues/2891
     https://github.com/duckdb/duckdb/pull/2895
     https://github.com/duckdb/duckdb/tree/ff7f24fd8e3128d94371827523dae85ebaf58713/third_party/libpg_query/grammar/keywords
+
+    TODO: https://duckdb.org/docs/extensions/full_text_search
     """
     global duckdb_connect
     # Table Function with name sql_auto_complete does not exist!

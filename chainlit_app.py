@@ -20,20 +20,26 @@ async def upload_new_table(
     table_name: str = DEFAULT_TABLE_NAME,
     extension: str = None,
 ):
+    """
+    TODO: Support multiple-file input
+
+    mime='text/csv'
+    mime='application/octet-stream'
+    """
+    # https://docs.chainlit.io/concepts/user-session
     global_table_df: Dict[str, pd.DataFrame] = cl.user_session.get("global_table_df")
     # TODO: add more file type support
     # TODO: add multi-file suport
     if not extension:
+        # TODO: use Pathlib
         if simplified_file_name:
             extension = simplified_file_name.rsplit(".", 1)[-1]
         else:
-            extension = file_path.rsplit('.', 1)[-1]
+            extension = file_path.rsplit(".", 1)[-1]
     if extension == "csv":
-        with open(file_path, "r", encoding="utf-8") as fp:
-            global_table_df[table_name] = pd.read_csv(fp)
+        global_table_df[table_name] = pd.read_csv(file_path)
     elif extension == "parquet":
-        with open(file_path, "rb") as fp:
-            global_table_df[table_name] = pd.read_parquet(fp)
+        global_table_df[table_name] = pd.read_parquet(file_path)
     else:
         raise NotImplementedError(f"Unknown extension {extension}")
 
@@ -154,12 +160,6 @@ async def update_settings(settings: dict):
     show_time = settings.get("ShowTime")
 
 
-# @cl.on_chat_end
-# def on_chat_end():
-#     global duckdb_connect
-#     duckdb_connect.close()
-
-
 @cl.step(name="Query DuckDB")
 async def query_duckdb(sql_query: str) -> str:
     duckdb_connect: duckdb.DuckDBPyConnection = cl.user_session.get("duckdb_connect")
@@ -216,3 +216,9 @@ async def plot(action: cl.Action) -> None:
 # @cl.action_callback("Statistics")
 # async def statistics(action: cl.Action) -> None:
 #     await cl.Message(action.df.to_markdown(index=True)).send()
+
+# @cl.action_callback("Download")
+# async def download(action: cl.Action) -> None:
+#     await cl.Message(action.df.to_markdown(index=True)).send()
+
+# NOTE: cl.on_chat_end will trigger every conversations
